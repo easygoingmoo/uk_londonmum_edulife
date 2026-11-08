@@ -1,0 +1,950 @@
+<title>공룡알 구구단</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Jua&display=swap">
+<style>
+/* Layout: full-height app column — top bar, equation card, nest scene (fills the rest), egg progress strip, bottom tab bar. Dex/record scroll inside. */
+:root{
+  --bg:#eef7ea; --card:#ffffff; --ink:#3d3a2e; --soft:#7f8a6f; --line:#dce8d2; --track:#e6efdc;
+  --lava:#f4743b; --lava-d:#d4561f; --lava-soft:#ffe5d6; --leaf:#4fa25a; --leaf-soft:#ddf2dc;
+  --sky:#e2f3fb; --gold:#f2b01e; --gold-soft:#fff2c6; --blue:#5b98e0; --blue-soft:#e1edfc;
+  --shadow:0 2px 0 rgba(60,80,40,.06),0 8px 22px rgba(60,80,40,.11);
+  --f-display:"Jua","Gowun Dodum",system-ui,sans-serif;
+  --f-body:"Gowun Dodum","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#1a2119; --card:#262f25; --ink:#eef3e6; --soft:#a8b69a; --line:#3a4637; --track:#334031;
+  --lava:#f4803f; --lava-d:#ffa66e; --lava-soft:#47302a; --leaf:#80cd89; --leaf-soft:#2b3f2c;
+  --sky:#2b3a40; --gold:#f5c044; --gold-soft:#463d22; --blue:#83b2ee; --blue-soft:#283748;
+  --shadow:0 2px 0 rgba(0,0,0,.25),0 8px 22px rgba(0,0,0,.35); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#1a2119; --card:#262f25; --ink:#eef3e6; --soft:#a8b69a; --line:#3a4637; --track:#334031;
+  --lava:#f4803f; --lava-d:#ffa66e; --lava-soft:#47302a; --leaf:#80cd89; --leaf-soft:#2b3f2c;
+  --sky:#2b3a40; --gold:#f5c044; --gold-soft:#463d22; --blue:#83b2ee; --blue-soft:#283748;
+  --shadow:0 2px 0 rgba(0,0,0,.25),0 8px 22px rgba(0,0,0,.35); color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;background:var(--bg);color:var(--ink)}
+body{margin:0;font-family:var(--f-body);font-size:15px;line-height:1.5;overflow:hidden}
+button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+button:focus-visible,input:focus-visible{outline:3px solid var(--lava);outline-offset:2px}
+
+.app{height:100%;max-width:880px;margin:0 auto;display:flex;flex-direction:column;gap:10px;padding-block:10px;
+  padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
+
+.top{flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.brand{display:flex;align-items:center;gap:8px;min-width:0}
+.brand img{width:22px;flex:none;transform:rotate(-12deg)}
+.brand h1{font-family:var(--f-display);font-weight:400;font-size:22px;margin:0;line-height:1.1;white-space:nowrap}
+.top-right{display:flex;gap:8px;align-items:center;flex:none}
+.wallet{display:flex;align-items:center;gap:6px;background:var(--card);border-radius:999px;box-shadow:var(--shadow);padding:5px 14px 5px 10px;border:0}
+.wallet img{width:24px}
+.wallet b{font-family:var(--f-display);font-size:18px;font-weight:400;font-variant-numeric:tabular-nums}
+.wallet small{font-size:12px;color:var(--soft)}
+.icon-btn{width:38px;height:38px;border-radius:50%;border:0;background:var(--card);box-shadow:var(--shadow);display:grid;place-items:center;color:var(--soft)}
+.icon-btn svg{width:20px;height:20px}
+
+.quiz{flex:none;display:flex;flex-direction:column;gap:6px}
+.q-card{background:var(--card);border-radius:24px;box-shadow:var(--shadow);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.sign{font-family:var(--f-display);font-size:clamp(32px,8.2vw,50px);line-height:1;display:flex;align-items:center;gap:.25em;font-variant-numeric:tabular-nums;white-space:nowrap}
+.sign .op{color:var(--soft);font-size:.8em}
+.sign .ans{min-width:1.75em;height:1.35em;padding:0 .2em;display:grid;place-items:center;border-radius:.45em;border:3px dashed var(--lava);background:var(--lava-soft);color:var(--lava-d)}
+.sign .ans.ok{border-style:solid;border-color:var(--leaf);background:var(--leaf-soft);color:var(--leaf);animation:pop .45s}
+.q-meta{display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex:none}
+.pips{display:grid;grid-template-columns:repeat(5,10px);gap:5px}
+.pip{width:10px;height:10px;border-radius:50%;background:var(--track)}
+.pip.ok{background:var(--leaf)}.pip.meh{background:var(--gold)}.pip.now{background:var(--card);box-shadow:inset 0 0 0 2.5px var(--lava)}
+.pill-btn{border:0;border-radius:999px;background:var(--lava-soft);color:var(--lava-d);font-family:var(--f-display);font-size:14px;padding:5px 12px;white-space:nowrap}
+.hint{margin:0;height:2.8em;overflow:hidden;text-align:center;color:var(--soft);font-size:14px;line-height:1.35;display:flex;flex-wrap:wrap;gap:3px 5px;justify-content:center;align-items:center;padding-inline:4px}
+.hint b{color:var(--ink);font-weight:400;font-family:var(--f-display);font-size:15px}
+.hint .seq{font-family:var(--f-display);font-size:14px;background:var(--card);border-radius:8px;padding:1px 7px;color:var(--ink);box-shadow:var(--shadow)}
+.hint .seq.q{background:var(--lava);color:#fff}
+
+/* scene (art keeps fixed colours) */
+.stage{flex:1 1 auto;min-height:0;display:flex}
+.cage{position:relative;flex:1;min-height:150px;border-radius:28px;border:5px solid var(--card);box-shadow:var(--shadow);overflow:hidden;user-select:none;-webkit-user-select:none;background:#cfeaf6}
+.sky{position:absolute;inset:0 0 auto 0;height:52%;background:linear-gradient(#b7e1f4,#e8f6f1)}
+.ground{position:absolute;inset:44% 0 0 0;background-size:64px 64px}
+.edge{position:absolute;left:0;right:0;top:-12px;height:14px;background-size:56px 14px;background-repeat:repeat-x}
+.thing{position:absolute;display:block;pointer-events:none}
+.volcano{left:1%;bottom:54%;width:30%}
+.palm{right:1%;bottom:50%;width:15%}
+.fern1{left:26%;bottom:51%;width:12%}
+.fern2{right:17%;bottom:52%;width:10%}
+.cloud{top:6%;width:16%;animation:drift 38s linear infinite alternate}
+.cloud.c2{top:14%;width:11%;animation-duration:52s;animation-direction:alternate-reverse}
+.nest{position:absolute;left:50%;bottom:40%;width:31%;aspect-ratio:240/100;transform:translateX(-50%);z-index:2}
+.nest img{position:absolute;display:block}
+.nest .nb,.nest .nf{inset:0;width:100%}
+.nest .nf{z-index:3}
+.egg{left:50%;bottom:38%;width:40%;transform:translateX(-50%);z-index:2;transform-origin:50% 90%;filter:drop-shadow(0 0 0 rgba(255,150,60,0));transition:filter .4s}
+.egg.warm{animation:wobble .6s ease-in-out;filter:drop-shadow(0 0 14px rgba(255,140,50,.85))}
+.egg.big{animation:shakeBig .9s ease-in-out}
+.egg.dropin{animation:dropin .6s cubic-bezier(.3,.7,.4,1)}
+.shell{left:50%;bottom:38%;width:40%;z-index:2}
+.shell.top{animation:shellTop .9s ease-out forwards}
+.shell.bot{transform:translateX(-50%)}
+.baby{left:50%;bottom:30%;width:78%;z-index:2;animation:born .7s cubic-bezier(.3,1.6,.5,1) both}
+.nbubble{position:absolute;left:50%;bottom:150%;transform:translateX(-50%);z-index:5;background:#fff;color:#3d3a2e;border-radius:14px;font-family:var(--f-display);font-size:15px;padding:3px 11px;white-space:nowrap;box-shadow:0 3px 10px rgba(40,60,30,.2)}
+.nbubble::after{content:"";position:absolute;left:50%;top:100%;transform:translateX(-50%);border:7px solid transparent;border-top-color:#fff}
+
+.buddies{position:absolute;inset:0;z-index:3;pointer-events:none}
+.buddy{position:absolute;width:11%;pointer-events:auto;cursor:pointer;transition-property:left,top;transition-timing-function:ease-in-out}
+.buddy .bb{position:relative}
+.buddy img{width:100%;display:block;filter:drop-shadow(0 4px 2px rgba(40,50,20,.18))}
+.buddy.left img{transform:scaleX(-1)}
+.buddy.walk .bb{animation:bob .3s ease-in-out infinite alternate}
+.buddy.hop .bb{animation:hop .55s ease-out}
+.buddy .tag{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:#fff;color:#3d3a2e;border-radius:10px;font-family:var(--f-display);font-size:12px;padding:1px 8px;white-space:nowrap;box-shadow:0 2px 6px rgba(40,60,30,.2)}
+
+.hud{position:absolute;left:10px;top:10px;z-index:7;display:flex;gap:6px;pointer-events:none;flex-wrap:wrap}
+.chipx{background:rgba(255,255,255,.93);color:#3d3a2e;border-radius:999px;padding:4px 10px;display:flex;align-items:center;gap:6px;font-family:var(--f-display);font-size:13px;box-shadow:0 2px 6px rgba(40,60,30,.14)}
+.chipx.combo{background:#f4743b;color:#fff}
+.chipx b{font-weight:400;font-size:15px}
+.flames{display:flex;gap:1px}
+.flames svg{width:11px;height:13px}
+
+.seeds{position:absolute;inset:0;pointer-events:none;z-index:6}
+.seed{position:absolute;pointer-events:auto;width:clamp(58px,11%,88px);aspect-ratio:140/110;border:0;padding:0;background:transparent center/100% 100% no-repeat;
+  touch-action:none;display:flex;align-items:center;justify-content:center;transition:opacity .25s;filter:drop-shadow(0 4px 2px rgba(50,40,20,.22)) drop-shadow(0 0 6px rgba(255,140,60,.35))}
+.seed span{font-family:var(--f-display);font-size:clamp(19px,3.2vw,28px);color:#fff;line-height:1;margin-top:4%;
+  text-shadow:2px 0 0 #3e2d24,-2px 0 0 #3e2d24,0 2px 0 #3e2d24,0 -2px 0 #3e2d24,2px 2px 0 #3e2d24,-2px -2px 0 #3e2d24,2px -2px 0 #3e2d24,-2px 2px 0 #3e2d24}
+.seed.falling{animation:drop .55s cubic-bezier(.3,.7,.4,1) both}
+.seed.snap{transition:transform .25s ease-out,opacity .25s}
+.seed.shake{animation:shake .4s}
+.seed.tried{opacity:.35}
+.seed.glow{animation:glow 1s ease-in-out infinite}
+.seed.fly{transition:transform .48s cubic-bezier(.35,-0.45,.6,1),opacity .2s .4s;z-index:9}
+.seed.leave{transition:opacity .25s,transform .25s;opacity:0;transform:translateY(20%) scale(.8)}
+.seed:focus-visible{outline:3px solid #ffd23d;outline-offset:2px;border-radius:14px}
+
+.fx{position:absolute;inset:0;pointer-events:none;z-index:8}
+.float{position:absolute;font-family:var(--f-display);font-size:22px;color:#f4743b;text-shadow:0 2px 0 #fff,2px 0 0 #fff,-2px 0 0 #fff,0 -2px 0 #fff;animation:floatUp 1s ease-out forwards;white-space:nowrap}
+.confetti{position:absolute;width:10px;height:10px;border-radius:50%;animation:fall 1.4s ease-in forwards}
+.toast{position:absolute;left:50%;bottom:4%;transform:translateX(-50%);z-index:9;background:#fff;color:#3d3a2e;border-radius:16px;box-shadow:0 6px 18px rgba(40,60,30,.22);
+  font-family:var(--f-display);font-size:15px;padding:8px 14px;max-width:90%;width:max-content;text-align:center;animation:toast 2.6s forwards}
+.overlay{position:absolute;inset:0;z-index:10;background:rgba(30,40,20,.38);display:flex;align-items:center;justify-content:center;padding:12px}
+.card{background:#fff;color:#3d3a2e;border-radius:26px;box-shadow:0 10px 30px rgba(30,40,20,.3);padding:14px 16px;text-align:center;max-width:340px;width:100%;display:flex;flex-direction:column;gap:8px;max-height:100%;overflow:auto}
+.card h2{font-family:var(--f-display);font-weight:400;font-size:23px;margin:0;line-height:1.25}
+.card .pic{width:auto;max-width:50%;height:clamp(64px,19vh,140px);object-fit:contain;margin:0 auto;animation:born .6s cubic-bezier(.3,1.6,.5,1) both}
+.card .stars{font-size:34px;letter-spacing:6px;color:#f2b01e;line-height:1}
+.card .stars .off{color:#ece6cf}
+.card p{margin:0;font-family:var(--f-display);font-size:17px;line-height:1.45;color:#3d3a2e}
+.card b{font-family:var(--f-display);font-weight:400;color:#d4561f}
+.card .row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:4px}
+.card .btn{background:#f6faf2;color:#3d3a2e;border-color:#dce8d2}
+.card .btn.sun{background:#f4743b;color:#fff;border-color:#f4743b}
+.rar{display:inline-block;font-family:var(--f-display);font-size:12.5px;border-radius:999px;padding:1px 10px;align-self:center}
+.rar.common{background:#e3f3d6;color:#3f7f2f}.rar.rare{background:#dfeafc;color:#2f5fa8}.rar.legend{background:#fff0bf;color:#9a6a00}
+
+.goal{flex:none;display:flex;gap:10px;align-items:center;background:var(--card);border-radius:18px;box-shadow:var(--shadow);padding:8px 12px;border:0;width:100%;text-align:left}
+.goal img{width:28px;flex:none}
+.goal .g-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+.goal .g-top{display:flex;justify-content:space-between;gap:8px;font-size:13px;color:var(--soft)}
+.goal .g-top b{font-family:var(--f-display);font-weight:400;color:var(--ink);font-size:14px}
+.goal .g-n{font-family:var(--f-display);color:var(--lava-d);font-variant-numeric:tabular-nums;flex:none}
+.bar{height:8px;border-radius:999px;background:var(--track);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--gold),var(--lava));transition:width .4s}
+
+.scroll{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;margin-inline:-6px;padding:2px 6px 6px}
+.app[data-view="play"] .scroll{display:none}
+.app[data-view="dex"] .quiz,.app[data-view="dex"] .goal,.app[data-view="rec"] .quiz,.app[data-view="rec"] .goal,.app[data-view="rec"] .stage{display:none}
+.app[data-view="dex"] .stage{flex:0 0 auto;height:min(30vh,280px)}
+
+.credit{flex:none;text-align:center;font-size:11.5px;line-height:1;margin-top:-4px;color:var(--soft)}
+.credit a{color:inherit;text-decoration:none;padding:2px 6px;border-radius:6px}
+.credit a:hover,.credit a:focus-visible{text-decoration:underline;color:var(--lava-d)}
+.tabbar{flex:none;display:flex;gap:6px;background:var(--card);border-radius:22px;box-shadow:var(--shadow);padding:6px}
+.tab{flex:1;border:0;background:transparent;border-radius:16px;padding:6px 4px;display:flex;flex-direction:column;align-items:center;gap:2px;font-family:var(--f-display);font-size:13px;color:var(--soft)}
+.tab svg{width:24px;height:24px}
+.tab[aria-selected="true"]{background:var(--lava-soft);color:var(--lava-d)}
+
+.panel{background:var(--card);border-radius:22px;box-shadow:var(--shadow);padding:16px;display:flex;flex-direction:column;gap:16px}
+.label{font-family:var(--f-display);font-size:14px;color:var(--soft)}
+.btn{border:2px solid var(--line);background:var(--card);border-radius:14px;padding:7px 14px;font-family:var(--f-display);font-size:15px;transition:transform .08s}
+.btn:active{transform:scale(.96)}
+.btn.sun{background:var(--lava);border-color:var(--lava);color:#fff;box-shadow:0 3px 0 var(--lava-d)}
+.btn[disabled]{opacity:.6;cursor:not-allowed;transform:none;box-shadow:none}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:2px solid var(--line);background:var(--card);border-radius:999px;padding:4px 12px;font-family:var(--f-display);font-size:15px}
+.chip[aria-pressed="true"]{background:var(--lava);border-color:var(--lava);color:#fff}
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.sec-h h2{font-family:var(--f-display);font-weight:400;font-size:20px;margin:0}
+.sec-h span{font-size:13px;color:var(--soft)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.dino{border:2px solid var(--line);border-radius:18px;background:var(--card);display:flex;flex-direction:column;gap:5px;padding:10px}
+.dino.out{background:var(--leaf-soft);border-color:var(--leaf)}
+.dino .pv{height:96px;display:flex;align-items:center;justify-content:center;background:var(--sky);border-radius:14px;position:relative}
+.dino .pv img{max-height:84px;max-width:88%}
+.dino.unknown .pv img{filter:brightness(0) opacity(.18)}
+.dino h3{font-family:var(--f-display);font-weight:400;font-size:16px;margin:0;line-height:1.25}
+.dino .meta{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--soft)}
+.dino .rar{align-self:auto}
+.dino p{margin:0;font-size:12.5px;color:var(--soft);line-height:1.4;flex:1}
+.dino .btn{font-size:14px;padding:6px 8px;width:100%}
+.cnt{position:absolute;right:8px;top:6px;font-family:var(--f-display);font-size:13px;color:var(--soft)}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tile{border-radius:16px;padding:10px 12px;background:var(--sky)}
+.tile b{display:block;font-family:var(--f-display);font-size:22px;font-weight:400;margin-top:2px;font-variant-numeric:tabular-nums}
+.tbl-wrap{overflow-x:auto}
+table.mx{border-collapse:separate;border-spacing:4px;font-variant-numeric:tabular-nums;min-width:520px;width:100%}
+.mx th{font-family:var(--f-display);font-weight:400;font-size:14px;color:var(--soft);padding:2px 4px}
+.mx td{border-radius:10px;text-align:center;font-size:12px;padding:6px 2px;background:var(--track);color:var(--ink)}
+.mx td.l1{background:var(--lava-soft)}
+.mx td.l2{background:var(--leaf-soft)}
+.mx td.l3{background:var(--gold);color:#3d3a2e;font-family:var(--f-display);font-size:14px}
+.mx td.row-sum{background:none;font-family:var(--f-display);color:var(--soft)}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--soft)}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{width:14px;height:14px;border-radius:5px;display:inline-block}
+.danger{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--soft)}
+
+.sheet-bg{position:fixed;inset:0;z-index:50;background:rgba(30,40,20,.35);display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--card);width:100%;max-width:520px;border-radius:26px 26px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:12px;animation:up .25s ease-out}
+.sheet h2{font-family:var(--f-display);font-weight:400;font-size:19px;margin:0;text-align:center}
+.sheet .chips{justify-content:center;gap:8px}
+.sheet .chip{font-size:18px;padding:7px 15px}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;background:var(--track);border-radius:16px;padding:4px}
+.seg button{border:0;background:transparent;border-radius:12px;padding:8px 4px;font-family:var(--f-display);font-size:17px;color:var(--soft)}
+.seg button[aria-pressed="true"]{background:var(--card);color:var(--lava-d);box-shadow:var(--shadow)}
+.sheet .btn{font-size:17px;padding:10px}
+.sheet .lvl-desc{text-align:center;font-size:13.5px;color:var(--soft);margin-top:-4px;min-height:1.4em}
+.sheet .sec{font-family:var(--f-display);font-size:15px;color:var(--ink);text-align:center;margin-top:2px}
+
+@media (max-width:560px){
+  .app{gap:8px;padding-block:8px}
+  .brand h1{font-size:19px}
+  .hint{font-size:13px;min-height:2.7em}
+  .seed{width:clamp(56px,17%,80px)}
+  .nest{width:46%}
+  .buddy{width:16%}
+  .volcano{width:40%}.palm{width:22%}.fern1{width:18%;left:30%}.fern2{width:15%;right:22%}
+  .cloud{width:24%}.cloud.c2{width:16%}
+  .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .dino{padding:8px}.dino .pv{height:80px}.dino .pv img{max-height:70px}
+  .panel{padding:14px}
+  .tile{padding:8px}.tile b{font-size:18px}
+}
+@media (max-height:760px){
+  .app{gap:6px;padding-block:6px}
+  .top .wallet{padding:3px 12px 3px 8px}.icon-btn{width:34px;height:34px}.brand h1{font-size:18px}
+  .sign{font-size:clamp(28px,7.4vw,40px)}.q-card{padding:6px 12px;border-radius:20px}.q-meta{gap:5px}.pill-btn{font-size:13px;padding:4px 10px}
+  .hint{font-size:12.5px;height:2.7em}
+  .tabbar{padding:4px;border-radius:18px}
+  .card{gap:5px}.card h2{font-size:20px}.card p{font-size:16px}
+  .tab{flex-direction:row;justify-content:center;gap:6px;padding:7px 4px}.tab svg{width:20px;height:20px}
+}
+
+@keyframes drop{0%{transform:translateY(-260%) rotate(-25deg);opacity:0}60%{transform:translateY(5%) rotate(6deg);opacity:1}80%{transform:translateY(-6%) rotate(-2deg)}100%{transform:none}}
+@keyframes shake{0%,100%{transform:none}20%{transform:translateX(-14%) rotate(-8deg)}40%{transform:translateX(12%) rotate(7deg)}60%{transform:translateX(-8%)}80%{transform:translateX(6%)}}
+@keyframes glow{0%,100%{filter:drop-shadow(0 0 0 #ffe08a)}50%{filter:drop-shadow(0 0 12px #ffd23d) drop-shadow(0 0 3px #fff)}}
+@keyframes wobble{0%,100%{transform:translateX(-50%) rotate(0)}25%{transform:translateX(-50%) rotate(-8deg)}50%{transform:translateX(-50%) rotate(7deg)}75%{transform:translateX(-50%) rotate(-4deg)}}
+@keyframes shakeBig{0%,100%{transform:translateX(-50%) rotate(0)}10%,30%,50%,70%,90%{transform:translateX(-50%) rotate(-12deg) scale(1.04)}20%,40%,60%,80%{transform:translateX(-50%) rotate(12deg) scale(1.04)}}
+@keyframes dropin{0%{transform:translateX(-50%) translateY(-220%);opacity:0}70%{transform:translateX(-50%) translateY(6%);opacity:1}100%{transform:translateX(-50%)}}
+@keyframes shellTop{0%{transform:translateX(-50%)}100%{transform:translateX(-10%) translateY(-120%) rotate(70deg);opacity:0}}
+@keyframes born{0%{transform:translateX(-50%) scale(0)}100%{transform:translateX(-50%) scale(1)}}
+.card .pic{animation-name:pop}
+@keyframes bob{0%{transform:translateY(0)}100%{transform:translateY(-6%)}}
+@keyframes hop{0%,100%{transform:translateY(0)}40%{transform:translateY(-35%)}70%{transform:translateY(3%)}}
+@keyframes floatUp{0%{transform:translate(-50%,0);opacity:1}100%{transform:translate(-50%,-240%);opacity:0}}
+@keyframes fall{0%{transform:translateY(0) rotate(0)}100%{transform:translateY(560px) rotate(540deg);opacity:.2}}
+@keyframes pop{0%{transform:scale(.4)}60%{transform:scale(1.2)}100%{transform:scale(1)}}
+@keyframes toast{0%{opacity:0;transform:translate(-50%,30%)}10%,85%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,30%)}}
+@keyframes up{from{transform:translateY(100%)}to{transform:none}}
+@keyframes drift{from{transform:translateX(0)}to{transform:translateX(320%)}}
+@media (prefers-reduced-motion:reduce){
+  .seed.falling,.egg.warm,.egg.big,.egg.dropin,.shell.top,.baby,.buddy .bb,.seed.glow,.confetti,.sheet,.cloud,.card .pic{animation:none!important}
+  .seed.glow{outline:3px solid #ffd23d}
+}
+
+/* v3 additions: language toggle, yard counter, school trip */
+.lang-btn{width:auto;padding:0 12px;border-radius:999px;font-family:var(--f-display);font-size:14px;color:var(--lava-d)}
+.chipx.yard b{font-weight:400}
+.school-btn{position:absolute;right:10px;top:10px;z-index:7;border:0;border-radius:999px;background:#f4743b;color:#fff;font-family:var(--f-display);font-size:16px;padding:8px 14px 8px 10px;display:flex;align-items:center;gap:6px;box-shadow:0 4px 0 #c4501d,0 6px 16px rgba(40,30,10,.25);animation:pulse 1.2s ease-in-out infinite}
+.school-btn svg{width:22px;height:22px}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+.dex-filter{display:flex;gap:6px;flex-wrap:wrap}
+.trip{position:fixed;inset:0;z-index:80;overflow:hidden;font-family:var(--f-display);color:#3d3a2e}
+.trip .scene{position:absolute;inset:0;transition:opacity .45s}
+.trip .walk{background:linear-gradient(#b7e1f4,#e8f6f1 62%,#cfe79d 62%,#bfe08a)}
+.trip .school{position:absolute;right:4%;bottom:34%;width:min(46%,340px)}
+.trip .road{position:absolute;left:0;right:0;bottom:24%;height:9%;background:#e9d9b4;border-top:4px solid #d9c18f;border-bottom:4px solid #d9c18f}
+.trip .walker{position:absolute;bottom:27%;width:min(15%,120px);left:-20%;transition-property:left,opacity,transform;transition-timing-function:ease-in-out}
+.trip .walker img{width:100%;display:block;animation:bob .28s ease-in-out infinite alternate}
+.trip .walker.in{opacity:0;transform:scale(.5)}
+.trip .class{background:#fbeccf}
+.trip .class::before{content:"";position:absolute;left:0;right:0;bottom:0;height:30%;background:repeating-linear-gradient(90deg,#d9a86a 0 60px,#cf9c5d 60px 120px)}
+.trip .board{position:absolute;left:50%;top:5%;transform:translateX(-50%);width:min(74%,560px);height:24%;background:#2f5d46;border:10px solid #b57c48;border-radius:14px;display:grid;place-items:center;color:#fff;font-size:clamp(30px,7vw,54px);box-shadow:0 6px 0 #8a5a32}
+.trip .board span{animation:pop .4s}
+.trip .seat{position:absolute;width:min(17%,130px);transform:translateX(-50%)}
+.trip .seat img{width:100%;display:block;position:relative;z-index:1;animation:study 1.1s ease-in-out infinite alternate}
+.trip .seat .desk{position:relative;z-index:2;height:16px;margin-top:-14px;background:#c98a52;border:3px solid #43301f;border-radius:6px}
+.trip .seat .desk::after{content:"";position:absolute;left:12%;right:12%;top:13px;height:22px;border-left:5px solid #43301f;border-right:5px solid #43301f}
+.trip .seat.pop{animation:seatIn .45s cubic-bezier(.3,1.6,.5,1) both}
+@keyframes study{0%{transform:translateY(0) rotate(-3deg)}100%{transform:translateY(-6%) rotate(3deg)}}
+@keyframes seatIn{from{transform:translateX(-50%) scale(0)}to{transform:translateX(-50%) scale(1)}}
+.trip .cap{position:absolute;left:50%;bottom:7%;transform:translateX(-50%);background:#fff;border-radius:999px;padding:8px 20px;font-size:clamp(16px,4.2vw,24px);white-space:nowrap;box-shadow:0 6px 18px rgba(40,30,10,.18);max-width:94%;overflow:hidden;text-overflow:ellipsis}
+.trip .done{position:absolute;left:50%;bottom:calc(7% + 64px);transform:translateX(-50%);font-size:18px;padding:10px 22px;border-radius:16px;border:0;background:#f4743b;color:#fff;box-shadow:0 4px 0 #c4501d;font-family:var(--f-display)}
+.trip .note{position:absolute;font-size:28px;animation:noteUp 1.8s ease-out forwards;pointer-events:none}
+@keyframes noteUp{0%{transform:translateY(0) scale(.6);opacity:0}20%{opacity:1}100%{transform:translateY(-140px) scale(1.1);opacity:0}}
+@media (prefers-reduced-motion:reduce){.trip .walker img,.trip .seat img,.school-btn,.trip .seat.pop{animation:none}}
+</style>
+
+<div class="app" id="app" data-view="play">
+  <header class="top">
+    <div class="brand"><img id="brandEgg" alt=""><h1 id="appTitle">공룡알 구구단</h1></div>
+    <div class="top-right">
+      <button class="wallet" id="wallet" type="button"><img id="walletDino" alt=""><b id="dexCount">0</b><small>/ 50</small></button>
+      <button class="icon-btn lang-btn" id="langBtn" type="button">EN</button>
+      <button class="icon-btn" id="soundBtn" type="button"></button>
+    </div>
+  </header>
+
+  <section class="quiz" id="quiz">
+    <div class="q-card">
+      <div class="sign" aria-live="polite"><span id="eqA">7</span><span class="op" id="eqOp">×</span><span id="eqB">8</span><span class="op">=</span><span class="ans" id="eqAns">?</span></div>
+      <div class="q-meta">
+        <div class="pips" id="pips"></div>
+        <button class="pill-btn" id="setBtn" type="button"></button>
+      </div>
+    </div>
+    <p class="hint" id="hint"></p>
+  </section>
+
+  <div class="stage">
+    <div class="cage" id="cage">
+      <div class="sky"></div>
+      <img class="thing cloud" id="cloud1" alt="" style="left:6%">
+      <img class="thing cloud c2" id="cloud2" alt="" style="left:44%">
+      <img class="thing volcano" id="volcano" alt="">
+      <img class="thing palm" id="palm" alt="">
+      <div class="ground" id="ground"><div class="edge" id="edge"></div></div>
+      <img class="thing fern1" id="fern1" alt="">
+      <img class="thing fern2" id="fern2" alt="">
+      <div class="nest" id="nest">
+        <img class="nb" id="nestBack" alt="">
+        <img class="egg" id="egg" alt="">
+        <img class="shell bot" id="shellBot" alt="" hidden>
+        <img class="shell top" id="shellTop" alt="" hidden>
+        <img class="baby" id="baby" alt="" hidden>
+        <img class="nf" id="nestFront" alt="">
+        <div class="nbubble" id="bubble" hidden></div>
+      </div>
+      <div class="buddies" id="buddies"></div>
+      <div class="hud"><div class="chipx"><span id="eggName"></span><span class="flames" id="flames"></span></div><div class="chipx yard" id="yardChip"></div><div class="chipx combo" id="comboBox" hidden><b id="combo">0</b><span id="comboTxt"></span></div></div>
+      <button class="school-btn" id="schoolBtn" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9 12 4l10 5-10 5z"/><path d="M6 11v5c3 2 9 2 12 0v-5"/><path d="M22 9v6"/></svg><span id="schoolTxt"></span></button>
+      <div class="seeds" id="seeds"></div>
+      <div class="fx" id="fx"></div>
+      <div class="overlay" id="overlay" hidden><div class="card" id="overCard"></div></div>
+    </div>
+  </div>
+
+  <main class="scroll" id="scroll">
+    <section class="panel" id="panel-dex" hidden></section>
+    <section class="panel" id="panel-rec" hidden></section>
+  </main>
+
+  <nav class="tabbar" role="tablist">
+    <button class="tab" role="tab" id="tab-play" aria-selected="true" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c4 0 7 6 7 11a7 7 0 0 1-14 0c0-5 3-11 7-11z"/><path d="m8 13 2 1.5 2-2 2 2 2-1.5"/></svg><span id="tabPlay"></span></button>
+    <button class="tab" role="tab" id="tab-dex" aria-selected="false" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17c2 0 3-2 5-2h6c3 0 4-3 4-6a3 3 0 0 1 3 3v2"/><path d="M8 15v4M13 15v4"/><circle cx="19" cy="8" r=".6"/><path d="M3 17c0-3 2-5 5-5"/></svg><span id="tabDex"></span></button>
+    <button class="tab" role="tab" id="tab-rec" aria-selected="false" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M4 10h16M4 15h16M10 4v16M15 4v16"/></svg><span id="tabRec"></span></button>
+  </nav>
+  <p class="credit"><a href="https://www.instagram.com/uk_londonmum_edulife/" target="_blank" rel="noopener noreferrer">Copyright by @uk_londonmum_edulife</a></p>
+
+  <div class="sheet-bg" id="sheet" hidden><div class="sheet" role="dialog">
+    <h2 id="sheetTitle"></h2>
+    <div class="sec" id="secType"></div>
+    <div class="seg" id="modeSeg"><button type="button" data-mode="mul"></button><button type="button" data-mode="div"></button><button type="button" data-mode="mix"></button></div>
+    <div class="sec" id="secLevel"></div>
+    <div class="seg" id="levelSeg"><button type="button" data-level="easy"></button><button type="button" data-level="normal"></button><button type="button" data-level="hard"></button></div>
+    <div class="lvl-desc" id="lvlDesc"></div>
+    <div class="sec" id="sheetTables"></div>
+    <div class="chips" id="tableChips"></div>
+    <button class="btn sun" id="sheetDone" type="button"></button>
+  </div></div>
+</div>
+
+<div class="trip" id="trip" hidden>
+  <div class="scene walk" id="tripWalk"><div class="road"></div><img class="school" id="schoolImg" alt=""><div class="cap" id="capWalk"></div></div>
+  <div class="scene class" id="tripClass" style="opacity:0"><div class="board" id="board"></div><div id="seats"></div><div class="cap" id="capClass"></div><button class="done" id="tripDone" type="button" hidden></button></div>
+</div>
+
+<script>
+(()=>{
+const $=s=>document.querySelector(s);
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const svg=(vb,body)=>'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb}">${body}</svg>`);
+function rng(seed){return()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const OUT='#43301f';
+const LN=(w=6)=>`stroke="${OUT}" stroke-width="${w}" stroke-linejoin="round" stroke-linecap="round"`;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const nb=n=>[0,1,3,6,7,8].includes(Math.abs(n)%10);
+const nGa=n=>nb(n)?'이':'가',nEun=n=>nb(n)?'은':'는',nEul=n=>nb(n)?'을':'를';
+
+/* ---------- 50 species ---------- */
+// [id, kind, rarity, ko, en, [body,belly,accent], pattern, factKo, factEn]
+const RAW=[
+['stego','stego','c','스테고사우루스','Stegosaurus',['#8fbbe8','#e6f1ff','#f2879f'],'dots','등에 커다란 골판이 두 줄로 솟아 있었어요.','It had two rows of big plates on its back.'],
+['trike','trike','c','트리케라톱스','Triceratops',['#f3a75c','#fde9cc','#e9685a'],'','이름이 "뿔이 세 개 달린 얼굴"이라는 뜻이에요.','Its name means "three-horned face".'],
+['para','para','c','파라사우롤로푸스','Parasaurolophus',['#6cc4b6','#ddf5f0','#f2788b'],'dots','머리 위 긴 볏으로 나팔 같은 소리를 냈을 거예요.','Its long head crest may have worked like a trumpet.'],
+['pachy','pachy','c','파키케팔로사우루스','Pachycephalosaurus',['#f39db2','#ffe7ee','#c9667f'],'','아주 두꺼운 둥근 머리뼈를 가졌어요.','It had a very thick, dome-shaped skull.'],
+['proto','proto','c','프로토케라톱스','Protoceratops',['#d9b77a','#f7ecd2','#b98a4e'],'dots','양만 한 크기로, 큰 뿔 없이 목 방패만 있었어요.','About the size of a sheep, with a neck frill but no big horns.'],
+['edmonto','hadro','c','에드몬토사우루스','Edmontosaurus',['#9ab86a','#eef5dc','#6f8f45'],'stripes','오리처럼 넓적한 주둥이로 식물을 먹었어요.','It ate plants with a wide, duck-like bill.'],
+['maia','hadro','c','마이아사우라','Maiasaura',['#e6a6d8','#fbe9f6','#b56ea8'],'spots','이름이 "착한 엄마 도마뱀"이라는 뜻이에요. 둥지에서 새끼를 돌봤어요.','Its name means "good mother lizard". It cared for its babies in nests.'],
+['iguano','iguano','c','이구아노돈','Iguanodon',['#7fb08a','#e5f3e6','#4f7f5c'],'stripes','엄지손가락에 뾰족한 가시가 있었어요.','It had a sharp spike on each thumb.'],
+['kentro','kentro','c','켄트로사우루스','Kentrosaurus',['#f2c45a','#fff3cf','#d9663f'],'','등과 꼬리에 긴 가시가 줄줄이 나 있었어요.','It had long spikes along its back and tail.'],
+['cory','cory','c','코리토사우루스','Corythosaurus',['#7aa6e0','#e4eeff','#f5a33c'],'dots','머리 위 볏이 헬멧처럼 둥글었어요.','Its round crest looked like a helmet.'],
+['lambeo','lambeo','c','람베오사우루스','Lambeosaurus',['#c4a0e8','#f2e8ff','#7f5cc4'],'spots','머리 볏이 도끼 모양이었어요.','Its head crest was shaped like a hatchet.'],
+['psitta','psitta','c','프시타코사우루스','Psittacosaurus',['#a8d86a','#f1fadf','#e8b04a'],'dots','앵무새처럼 생긴 부리를 가졌어요.','It had a beak like a parrot.'],
+['hypacro','cory','c','히파크로사우루스','Hypacrosaurus',['#f0907a','#ffe6df','#7a6fd6'],'stripes','둥지에 알을 낳고 무리 지어 살았어요.','It laid eggs in nests and lived in herds.'],
+['centro','centro','c','센트로사우루스','Centrosaurus',['#c9876a','#f6e2d6','#f5d08a'],'','코 위에 커다란 뿔이 하나 있었어요.','It had one big horn on its nose.'],
+['galli','galli','c','갈리미무스','Gallimimus',['#e8d1a0','#fbf3e2','#c79a52'],'stripes','타조처럼 아주 빨리 달렸어요.','It could run fast, like an ostrich.'],
+['compy','compy','c','콤프소그나투스','Compsognathus',['#93cf8a','#eaf7e6','#4f9a52'],'stripes','닭만 한 아주 작은 공룡이에요.','A tiny dinosaur about the size of a chicken.'],
+['ovi','ovi','c','오비랍토르','Oviraptor',['#5fb3d9','#e1f3fb','#f07a8a'],'','알을 품는 모습의 친척 화석이 발견됐어요.','Its relatives were found sitting on their nests of eggs.'],
+['stegoceras','stegoceras','c','스테고케라스','Stegoceras',['#b5a2e6','#efe9ff','#7c64c4'],'dots','작은 박치기 공룡으로 머리가 단단했어요.','A small dinosaur with a hard, domed head.'],
+['hypsi','compy','c','힙실로포돈','Hypsilophodon',['#f0c060','#fff3d6','#c98a2e'],'spots','몸집이 작고 재빠르게 달리는 초식 공룡이에요.','A small, quick-running plant eater.'],
+['tsintao','tsintao','c','칭다오사우루스','Tsintaosaurus',['#7cc4a0','#e2f6ec','#f2a541'],'dots','머리에 유니콘처럼 볏이 하나 솟아 있었어요.','It had a single crest on its head, like a unicorn.'],
+['anky','anky','r','안킬로사우루스','Ankylosaurus',['#cba56b','#f4e7c9','#8a6738'],'','꼬리 끝에 뼈로 된 곤봉이 있었어요.','It had a bony club at the end of its tail.'],
+['ptera','ptera','r','프테라노돈','Pteranodon',['#f4c44f','#fff2c6','#e8924a'],'','하늘을 날던 파충류로, 사실 공룡은 아니에요.','A flying reptile. It wasn\'t actually a dinosaur!'],
+['raptor','raptor','r','벨로키랍토르','Velociraptor',['#a8cb59','#f1f8d6','#e5604a'],'stripes','칠면조만 한 크기에 깃털이 있었어요.','It was about the size of a turkey and had feathers.'],
+['nodo','nodo','r','노도사우루스','Nodosaurus',['#8f9f8a','#e7ede4','#5c6b57'],'','온몸이 갑옷 판으로 덮여 있었지만 꼬리 곤봉은 없었어요.','It was covered in armor plates but had no tail club.'],
+['dilo','dilo','r','딜로포사우루스','Dilophosaurus',['#f0b85a','#fff0d2','#e2533f'],'stripes','머리 위에 볏이 두 개 있었어요.','It had two crests on its head.'],
+['allo','allo','r','알로사우루스','Allosaurus',['#d98a5c','#fbe4d6','#9c4d33'],'stripes','눈 위에 작은 뿔 같은 돌기가 있었어요.','It had small horn-like bumps above its eyes.'],
+['carno','carno','r','카르노타우루스','Carnotaurus',['#e06a5a','#fde0da','#8e2f2a'],'dots','황소처럼 머리에 뿔이 두 개 있었어요.','It had two horns on its head, like a bull.'],
+['styraco','styraco','r','스티라코사우루스','Styracosaurus',['#9cc26a','#eef7dd','#f2a53c'],'','목 방패 가장자리에 긴 가시가 여러 개 있었어요.','Its frill had several long spikes around the edge.'],
+['diplo','diplo','r','디플로도쿠스','Diplodocus',['#88b4c8','#e5f2f7','#55798a'],'spots','꼬리가 아주 길어서 채찍처럼 휘둘렀을 거예요.','Its very long tail may have worked like a whip.'],
+['amarga','amarga','r','아마르가사우루스','Amargasaurus',['#d4a2c4','#f8e9f3','#9a5f88'],'','목을 따라 긴 가시가 줄지어 나 있었어요.','It had tall spines along its neck.'],
+['deinony','raptor','r','데이노니쿠스','Deinonychus',['#6d8fd0','#e3ebfa','#f2c54a'],'stripes','발에 커다란 갈고리 발톱이 있었어요.','It had a big curved claw on each foot.'],
+['micro','micro','r','미크로랍토르','Microraptor',['#4b5d8f','#dfe6f7','#5fd0e0'],'','팔과 다리에 깃털 날개가 네 개 있었어요.','It had four feathered wings on its arms and legs.'],
+['archaeo','archaeo','r','시조새','Archaeopteryx',['#c9a06a','#f6ead6','#6a4f3a'],'','새와 공룡의 특징을 함께 가진 동물이에요.','It had features of both birds and dinosaurs.'],
+['plesio','plesio','r','플레시오사우루스','Plesiosaurus',['#6aa9d8','#e3f1fb','#3f7fb0'],'','목이 긴 바다 파충류로, 지느러미 네 개로 헤엄쳤어요.','A long-necked sea reptile that swam with four flippers.'],
+['ichthyo','ichthyo','r','이크티오사우루스','Ichthyosaurus',['#7ab6c9','#eaf6fa','#4b8aa0'],'','돌고래처럼 생긴 바다 파충류예요.','A sea reptile shaped like a dolphin.'],
+['rhampho','rhampho','r','람포린쿠스','Rhamphorhynchus',['#f2a07a','#fde6da','#c86a45'],'','꼬리 끝에 마름모 모양 날개가 있는 익룡이에요.','A flying reptile with a diamond-shaped tip on its tail.'],
+['sauro','sauro','r','사우롤로푸스','Saurolophus',['#a4b8e8','#eaf0ff','#e88a5a'],'dots','머리 뒤로 뾰족한 볏이 뻗어 있었어요.','It had a spiky crest pointing back from its head.'],
+['trex','trex','l','티라노사우루스','Tyrannosaurus rex',['#78c272','#e8f7cc','#4c9a4c'],'back','이빨 하나가 바나나만큼 컸어요.','Each tooth was as big as a banana.'],
+['brachio','brachio','l','브라키오사우루스','Brachiosaurus',['#b49ddb','#f0e8ff','#8d74c6'],'spots','목이 길어서 아주 높은 나뭇잎도 먹었어요.','Its long neck let it reach very high leaves.'],
+['spino','spino','l','스피노사우루스','Spinosaurus',['#68a4cb','#e1f0fa','#f38b5b'],'dots','등에 커다란 돛이 있었고 물고기를 잡아먹었어요.','It had a big sail on its back and ate fish.'],
+['giga','giga','l','기가노토사우루스','Giganotosaurus',['#8a6fc0','#ece4fb','#e8604c'],'stripes','티라노사우루스만큼 거대한 육식 공룡이에요.','A giant meat eater as big as T. rex.'],
+['argentino','brachio','l','아르젠티노사우루스','Argentinosaurus',['#e8b46a','#fdf0d8','#b97f3a'],'spots','지금까지 알려진 가장 큰 공룡 중 하나예요.','One of the biggest dinosaurs ever found.'],
+['mosa','mosa','l','모사사우루스','Mosasaurus',['#4f7fb8','#dfeafa','#2f5a8a'],'','바다를 누비던 거대한 바다 파충류예요.','A giant sea reptile that ruled the oceans.'],
+['quetzal','quetzal','l','케찰코아틀루스','Quetzalcoatlus',['#e86a8a','#fde2ea','#4fb3c9'],'','기린만큼 키가 큰 거대한 익룡이에요.','A giant flying reptile as tall as a giraffe.'],
+['therizino','therizino','l','테리지노사우루스','Therizinosaurus',['#e4c36a','#fdf5d6','#b8813a'],'','손에 아주 긴 발톱이 있었지만 주로 식물을 먹었어요.','It had very long claws but mostly ate plants.'],
+['yuty','yuty','l','유티란누스','Yutyrannus',['#f2d06a','#fff6d6','#d9873a'],'back','온몸에 깃털이 난 큰 티라노 친척이에요.','A big feathered cousin of T. rex.'],
+['mamenchi','mamen','l','마멘키사우루스','Mamenchisaurus',['#7fc0a0','#e4f6ec','#4a8f6c'],'spots','몸길이의 절반 가까이가 목이었어요.','Its neck was almost half as long as its whole body.'],
+['deino','deino','l','데이노케이루스','Deinocheirus',['#d97f6a','#fbe3dc','#7a9a4a'],'','등에 혹 같은 돛이 있고 팔이 아주 길었어요.','It had a hump on its back and very long arms.'],
+['koreacera','koreacera','l','코리아케라톱스','Koreaceratops',['#5cc0c0','#e0f7f7','#f2c84a'],'dots','우리나라 경기도 화성에서 발견된 뿔공룡 친척이에요.','A horned-dinosaur relative found in Hwaseong, Korea.'],
+['pukyongo','brachio','l','부경고사우루스','Pukyongosaurus',['#7aa0e8','#e6eeff','#f2c84a'],'spots','우리나라 경남 하동에서 발견된 목 긴 공룡이에요.','A long-necked dinosaur found in Hadong, Korea.']
+];
+const RMAP={c:'common',r:'rare',l:'legend'};
+const DINOS=RAW.map(r=>({id:r[0],k:r[1],rar:RMAP[r[2]],ko:r[3],en:r[4],c:r[5],p:r[6],fko:r[7],fen:r[8]}));
+const dinoById=Object.fromEntries(DINOS.map(d=>[d.id,d]));
+const RAR={common:{need:5,w:6},rare:{need:7,w:3},legend:{need:9,w:2}};
+const KIND={
+ stego:{bp:'quad',f:['plates','tailspikes']},kentro:{bp:'quad',f:['platesSmall','backspikes','tailspikes']},
+ trike:{bp:'quad',f:['frill','horns3']},proto:{bp:'quad',f:['frillSmall','beak']},koreacera:{bp:'quad',f:['frillSmall','beak','tailfin']},
+ psitta:{bp:'quad',f:['beak','cheek','quills']},centro:{bp:'quad',f:['frill','nose']},styraco:{bp:'quad',f:['frillSpikes','nose']},
+ para:{bp:'quad',f:['tube']},sauro:{bp:'quad',f:['spikeBack','bill']},cory:{bp:'quad',f:['helmet','bill']},lambeo:{bp:'quad',f:['hatchet','bill']},
+ tsintao:{bp:'quad',f:['unicorn','bill']},hadro:{bp:'quad',f:['bill']},iguano:{bp:'quad',f:['thumb']},
+ pachy:{bp:'quad',f:['dome','domeSpikes']},stegoceras:{bp:'quad',f:['dome']},
+ anky:{bp:'anky',f:['armor','club']},nodo:{bp:'anky',f:['armor','shoulder']},
+ trex:{bp:'big',f:['arms','tooth']},yuty:{bp:'big',f:['arms','tooth','feathers']},giga:{bp:'big',f:['arms','brow','tooth']},
+ allo:{bp:'quad',f:['arms','brow','ridge']},carno:{bp:'quad',f:['arms','bull']},dilo:{bp:'quad',f:['arms','double']},spino:{bp:'quad',f:['sail']},
+ raptor:{bp:'small',f:['arms','feathers']},compy:{bp:'small',f:['arms']},ovi:{bp:'small',f:['arms','feathers','casque','beak']},
+ micro:{bp:'small',f:['wings','feathers','tailfeather']},archaeo:{bp:'small',f:['wings','tailfeather','feathers']},
+ galli:{bp:'slender',f:['beak']},deino:{bp:'slender',f:['hump','bill','claws']},therizino:{bp:'slender',f:['feathers','claws']},
+ brachio:{bp:'sauro'},diplo:{bp:'diplo'},amarga:{bp:'diplo',f:['neckSpines']},mamen:{bp:'mamen'},
+ ptera:{bp:'ptero',f:['crestBack']},rhampho:{bp:'ptero',f:['ptail']},quetzal:{bp:'ptero',f:['crestTall']},
+ plesio:{bp:'marine'},ichthyo:{bp:'marine'},mosa:{bp:'marine'}
+};
+function eyeSvg(ex,ey,er,eye){return eye==='open'?`<circle cx="${ex}" cy="${ey}" r="${er}" fill="#24170f"/><circle cx="${ex+er*.35}" cy="${ey-er*.4}" r="${er*.42}" fill="#fff"/><circle cx="${ex-er*.4}" cy="${ey+er*.4}" r="${er*.18}" fill="#fff"/>`
+  :`<path d="M${ex-er} ${ey+2} Q${ex} ${ey-er} ${ex+er} ${ey+2}" fill="none" ${LN(4)}/>`}
+const blush=(x,y,er)=>`<ellipse cx="${x}" cy="${y}" rx="${er*1.05}" ry="${er*.6}" fill="#ff8fa3" opacity=".55"/>`;
+function drawMarine(d,eye){const[B,BE,A]=d.c,k=d.k;let sil='',back='',front='',ex,ey,er;
+  if(k==='plesio'){sil=`<ellipse cx="96" cy="108" rx="50" ry="28"/><path d="M126 98 C138 76 150 62 158 54 L176 64 C164 72 152 90 146 114 Z"/><circle cx="170" cy="52" r="18"/><path d="M52 100 L8 116 L52 122 Z"/>`;
+    back=`<ellipse cx="128" cy="132" rx="24" ry="8" fill="${A}" ${LN(4)} transform="rotate(30 128 132)"/><ellipse cx="66" cy="132" rx="22" ry="8" fill="${A}" ${LN(4)} transform="rotate(-30 66 132)"/>`;
+    front=`<ellipse cx="114" cy="128" rx="22" ry="8" fill="${A}" ${LN(4)} transform="rotate(30 114 128)"/><ellipse cx="80" cy="128" rx="20" ry="8" fill="${A}" ${LN(4)} transform="rotate(-30 80 128)"/>`;ex=176;ey=47;er=7.5}
+  if(k==='ichthyo'){sil=`<ellipse cx="100" cy="96" rx="62" ry="30"/><path d="M150 84 L198 96 L150 108 Z"/><path d="M46 84 L16 96 L46 110 Z"/>`;
+    back=`<path d="M84 70 L102 40 L122 70 Z" fill="${A}" ${LN(4)}/><path d="M30 96 L4 62 L20 96 L4 130 Z" fill="${A}" ${LN(4)}/>`;
+    front=`<ellipse cx="118" cy="122" rx="20" ry="7" fill="${A}" ${LN(4)} transform="rotate(28 118 122)"/>`;ex=140;ey=86;er=11}
+  if(k==='mosa'){sil=`<ellipse cx="92" cy="100" rx="66" ry="24"/><ellipse cx="166" cy="92" rx="32" ry="20"/><path d="M32 92 L4 100 L32 112 Z"/>`;
+    back=`<path d="M14 100 L0 70 L6 100 L0 130 Z" fill="${A}" ${LN(4)}/><ellipse cx="64" cy="124" rx="20" ry="7" fill="${A}" ${LN(4)} transform="rotate(-25 64 124)"/>`;
+    front=`<ellipse cx="124" cy="124" rx="22" ry="8" fill="${A}" ${LN(4)} transform="rotate(25 124 124)"/><path d="M150 102 Q172 110 196 98" fill="none" ${LN(3.5)}/>${[158,168,178,188].map(x=>`<path d="M${x} ${103+(x-150)*-.05} l3 6 l3 -6 Z" fill="#fff"/>`).join('')}`;ex=176;ey=84;er=8}
+  return svg('0 0 200 160',`<defs><clipPath id="s">${sil}</clipPath></defs>${back}<g fill="${OUT}" stroke="${OUT}" stroke-width="9" stroke-linejoin="round">${sil}</g><g fill="${B}">${sil}</g>
+  <g clip-path="url(#s)"><ellipse cx="110" cy="128" rx="80" ry="18" fill="${BE}"/><circle cx="80" cy="92" r="5" fill="${A}" opacity=".35"/><circle cx="100" cy="86" r="4" fill="${A}" opacity=".35"/></g>${front}${blush(ex+er*.3,ey+er*1.7,er)}${eyeSvg(ex,ey,er,eye)}`)}
+function drawDino(d,{eye='open'}={}){
+  const K=KIND[d.k],bp=K.bp,F=new Set(K.f||[]),[B,BE,A]=d.c;
+  if(bp==='marine')return drawMarine(d,eye);
+  let H={x:146,y:68,r:31},Bd={x:92,y:106,rx:46,ry:32},neck='',legs='',tail=true;
+  if(bp==='big')H={x:146,y:64,r:35};
+  if(bp==='small'){Bd={x:92,y:104,rx:42,ry:27};H={x:146,y:68,r:29}}
+  if(bp==='anky'){Bd={x:94,y:110,rx:52,ry:28};H={x:150,y:86,r:26}}
+  if(bp==='sauro'){H={x:166,y:34,r:24};neck='M104 96 C108 70 132 44 152 30 L176 44 C156 58 140 84 134 110 Z'}
+  if(bp==='diplo'){H={x:178,y:62,r:21};neck='M106 96 C122 76 148 62 168 54 L184 72 C162 76 142 92 134 112 Z'}
+  if(bp==='mamen'){H={x:174,y:24,r:20};neck='M104 96 C108 62 136 32 158 20 L182 34 C160 46 140 80 134 110 Z'}
+  if(bp==='slender'){Bd={x:86,y:100,rx:36,ry:25};H={x:152,y:40,r:19};neck='M100 92 C110 70 128 50 142 36 L162 48 C148 60 132 80 120 104 Z';legs='<rect x="68" y="108" width="14" height="38" rx="7"/><rect x="94" y="108" width="14" height="38" rx="7"/>'}
+  if(bp==='ptero'){Bd={x:96,y:104,rx:38,ry:28};H={x:142,y:64,r:27};legs='<rect x="80" y="118" width="14" height="28" rx="7"/><rect x="104" y="118" width="14" height="28" rx="7"/>';tail=false}
+  if(!legs)legs=`<rect x="64" y="${Bd.y+6}" width="24" height="${146-Bd.y-6}" rx="10"/><rect x="108" y="${Bd.y+8}" width="22" height="${146-Bd.y-8}" rx="10"/>`;
+  const tl=tail?`<path d="M${Bd.x-30} ${Bd.y-14} C${Bd.x-60} ${Bd.y-14} 20 ${Bd.y-26} 4 ${Bd.y-40} C14 ${Bd.y-6} 30 ${Bd.y+14} ${Bd.x-28} ${Bd.y+18} Z"/>`:'';
+  const bk=bp==='ptero'?`<path d="M${H.x+18} ${H.y-8} L198 ${H.y+8} L${H.x+18} ${H.y+16} Z"/>`:'';
+  const sil=`${tl}${legs}<ellipse cx="${Bd.x}" cy="${Bd.y}" rx="${Bd.rx}" ry="${Bd.ry}"/>${neck?`<path d="${neck}"/>`:''}<circle cx="${H.x}" cy="${H.y}" r="${H.r}"/>${bk}`;
+  const topY=x=>Bd.y-Bd.ry*Math.sqrt(Math.max(0,1-((x-Bd.x)/Bd.rx)**2));
+  const W='#fff6e6';let back='',front='',pat='';
+  const tri=(x,y,h,w,c,lw=4)=>`<path d="M${x-w} ${y+4} L${x} ${y-h} L${x+w} ${y+4} Z" fill="${c}" ${LN(lw)}/>`;
+  if(F.has('plates'))for(let i=0;i<5;i++){const x=58+i*16,y=topY(x)+4,h=18+(i===2?8:i===1||i===3?5:0);back+=`<path d="M${x-9} ${y+6} L${x-7} ${y-h*.55} L${x} ${y-h} L${x+7} ${y-h*.55} L${x+9} ${y+6} Z" fill="${A}" ${LN(4)}/>`}
+  if(F.has('platesSmall'))for(let i=0;i<3;i++){const x=100+i*12,y=topY(x)+4;back+=`<path d="M${x-7} ${y+6} L${x-5} ${y-9} L${x} ${y-15} L${x+5} ${y-9} L${x+7} ${y+6} Z" fill="${A}" ${LN(4)}/>`}
+  if(F.has('backspikes'))for(let i=0;i<3;i++){const x=56+i*14;back+=tri(x,topY(x)+2,20,4,W)}
+  if(F.has('tailspikes'))back+=`<path d="M14 ${Bd.y-42} L6 ${Bd.y-56} L22 ${Bd.y-46} Z M24 ${Bd.y-36} L18 ${Bd.y-50} L32 ${Bd.y-40} Z" fill="${W}" ${LN(3.5)}/>`;
+  if(F.has('sail'))back+=`<path d="M56 ${Bd.y-10} C58 34 92 24 120 46 C128 58 130 72 128 ${Bd.y-10} Z" fill="${A}" ${LN(4.5)}/><path d="M74 ${Bd.y-14} L76 46 M92 ${Bd.y-18} L94 38 M110 ${Bd.y-18} L112 48" stroke="#00000022" stroke-width="4" stroke-linecap="round"/>`;
+  if(F.has('hump'))back+=`<ellipse cx="${Bd.x-4}" cy="${Bd.y-Bd.ry+2}" rx="22" ry="18" fill="${A}" ${LN(4.5)}/>`;
+  if(F.has('frill')){back+=`<circle cx="${H.x-14}" cy="${H.y-12}" r="36" fill="${A}" ${LN(4.5)}/>`;for(let i=0;i<7;i++){const a=Math.PI*(.7+i*.17);back+=`<circle cx="${(H.x-14+Math.cos(a)*30).toFixed(1)}" cy="${(H.y-12+Math.sin(a)*30).toFixed(1)}" r="4" fill="#ffffff88"/>`}}
+  if(F.has('frillSmall'))back+=`<circle cx="${H.x-12}" cy="${H.y-14}" r="26" fill="${A}" ${LN(4.5)}/>`;
+  if(F.has('frillSpikes')){[150,180,208,236,264].forEach(g=>{const a=g*Math.PI/180,cx=H.x-14,cy=H.y-12,bx=cx+Math.cos(a)*28,by=cy+Math.sin(a)*28,tx=cx+Math.cos(a)*54,ty=cy+Math.sin(a)*54,px=-Math.sin(a)*7,py=Math.cos(a)*7;
+      back+=`<path d="M${(bx+px).toFixed(1)} ${(by+py).toFixed(1)} L${tx.toFixed(1)} ${ty.toFixed(1)} L${(bx-px).toFixed(1)} ${(by-py).toFixed(1)} Z" fill="${W}" ${LN(3.5)}/>`});back+=`<circle cx="${H.x-14}" cy="${H.y-12}" r="32" fill="${A}" ${LN(4.5)}/>`}
+  if(F.has('tube'))back+=`<path d="M${H.x-8} ${H.y-24} C${H.x-24} ${H.y-46} ${H.x-52} ${H.y-56} ${H.x-74} ${H.y-50} C${H.x-78} ${H.y-42} ${H.x-72} ${H.y-38} ${H.x-62} ${H.y-38} C${H.x-44} ${H.y-38} ${H.x-28} ${H.y-28} ${H.x-16} ${H.y-8} Z" fill="${A}" ${LN(4.5)}/>`;
+  if(F.has('spikeBack'))back+=`<path d="M${H.x-4} ${H.y-28} L${H.x-48} ${H.y-42} L${H.x-14} ${H.y-12} Z" fill="${A}" ${LN(4.5)}/>`;
+  if(F.has('helmet'))back+=`<ellipse cx="${H.x-2}" cy="${H.y-26}" rx="24" ry="18" fill="${A}" ${LN(4.5)}/>`;
+  if(F.has('hatchet'))back+=`<path d="M${H.x-4} ${H.y-24} C${H.x+2} ${H.y-58} ${H.x+32} ${H.y-52} ${H.x+18} ${H.y-24} Z" fill="${A}" ${LN(4.5)}/><path d="M${H.x-14} ${H.y-24} L${H.x-42} ${H.y-32} L${H.x-18} ${H.y-12} Z" fill="${A}" ${LN(4)}/>`;
+  if(F.has('unicorn'))back+=`<path d="M${H.x-6} ${H.y-26} L${H.x+4} ${H.y-64} L${H.x+12} ${H.y-26} Z" fill="${A}" ${LN(4.5)}/>`;
+  if(F.has('double'))back+=`<ellipse cx="${H.x-8}" cy="${H.y-28}" rx="8" ry="19" fill="${A}" ${LN(4)} transform="rotate(-18 ${H.x-8} ${H.y-28})"/><ellipse cx="${H.x+8}" cy="${H.y-30}" rx="8" ry="19" fill="${A}" ${LN(4)} transform="rotate(-18 ${H.x+8} ${H.y-30})"/>`;
+  if(F.has('casque'))back+=`<ellipse cx="${H.x+4}" cy="${H.y-26}" rx="15" ry="15" fill="${A}" ${LN(4.5)}/>`;
+  if(F.has('wings'))back+=`<path d="M${Bd.x+24} ${Bd.y-6} C${Bd.x} ${Bd.y-64} ${Bd.x-40} ${Bd.y-62} ${Bd.x-54} ${Bd.y-42} C${Bd.x-22} ${Bd.y-36} ${Bd.x} ${Bd.y-22} ${Bd.x+24} ${Bd.y-6} Z" fill="${A}" ${LN(4.5)}/><path d="M${Bd.x} ${Bd.y-20} L${Bd.x-30} ${Bd.y-50} M${Bd.x+8} ${Bd.y-14} L${Bd.x-14} ${Bd.y-54}" stroke="#ffffff77" stroke-width="3" stroke-linecap="round"/>`;
+  if(F.has('tailfeather'))back+=`<ellipse cx="12" cy="${Bd.y-44}" rx="24" ry="8" fill="${A}" ${LN(4)} transform="rotate(30 12 ${Bd.y-44})"/><ellipse cx="14" cy="${Bd.y-34}" rx="22" ry="7" fill="${A}" ${LN(4)} transform="rotate(10 14 ${Bd.y-34})"/>`;
+  if(F.has('tailfin'))back+=`<path d="M12 ${Bd.y-44} L22 ${Bd.y-70} L38 ${Bd.y-62} L52 ${Bd.y-34} Z" fill="${A}" ${LN(4)}/>`;
+  if(F.has('neckSpines'))for(let i=0;i<6;i++){const t=.1+i*.14,x=112+t*58,y=88-t*36;back+=`<path d="M${x-4} ${y+2} L${x-6} ${y-20} L${x+5} ${y} Z" fill="${A}" ${LN(3.5)}/>`}
+  if(F.has('quills'))back+=`<path d="M20 ${Bd.y-46} l-4 -16 M28 ${Bd.y-42} l-2 -16 M36 ${Bd.y-38} l0 -16 M44 ${Bd.y-34} l2 -15" stroke="${A}" stroke-width="4" stroke-linecap="round"/>`;
+  if(F.has('crestBack'))back+=`<path d="M${H.x-10} ${H.y-14} L${H.x-58} ${H.y-30} L${H.x-14} ${H.y+6} Z" fill="${A}" ${LN(4)}/>`;
+  if(F.has('crestTall'))back+=`<path d="M${H.x-8} ${H.y-14} L${H.x-34} ${H.y-62} L${H.x+8} ${H.y-22} Z" fill="${A}" ${LN(4)}/>`;
+  if(F.has('ptail'))back+=`<path d="M${Bd.x-30} ${Bd.y+4} L16 ${Bd.y+14}" stroke="${OUT}" stroke-width="9" stroke-linecap="round"/><path d="M${Bd.x-30} ${Bd.y+4} L16 ${Bd.y+14}" stroke="${B}" stroke-width="4" stroke-linecap="round"/><path d="M16 ${Bd.y+2} L4 ${Bd.y+14} L16 ${Bd.y+26} L28 ${Bd.y+14} Z" fill="${A}" ${LN(4)}/>`;
+  if(bp==='ptero'){back+=`<path d="M100 92 L26 30 C40 66 46 92 66 116 Z" fill="${A}" ${LN(4.5)}/>`;front+=`<path d="M106 96 L64 28 C76 64 80 90 96 116 Z" fill="${A}" opacity=".92" ${LN(4.5)}/>`}
+  if(F.has('armor')){for(let i=0;i<6;i++){const x=56+i*15,y=topY(x)+3;front+=tri(x,y,12,6,W,3.5)}
+    pat+=[[70,104],[92,100],[114,104],[82,118],[104,118]].map(([x,y])=>`<ellipse cx="${x}" cy="${y}" rx="8" ry="6" fill="${A}" opacity=".55"/>`).join('')}
+  if(F.has('club'))front+=`<circle cx="8" cy="${Bd.y-42}" r="11" fill="${A}" ${LN(4.5)}/>`;
+  if(F.has('shoulder'))front+=`<path d="M128 ${Bd.y-14} L146 ${Bd.y-28} L136 ${Bd.y-6} Z M120 ${Bd.y-20} L130 ${Bd.y-40} L132 ${Bd.y-14} Z" fill="${W}" ${LN(3.5)}/>`;
+  if(F.has('ridge'))for(let i=0;i<5;i++){const x=60+i*14;front+=tri(x,topY(x)+3,8,4,A,3)}
+  if(F.has('dome'))front+=`<path d="M${H.x-28} ${H.y-6} C${H.x-30} ${H.y-40} ${H.x+24} ${H.y-46} ${H.x+24} ${H.y-14} C${H.x+10} ${H.y-20} ${H.x-12} ${H.y-14} ${H.x-28} ${H.y-6} Z" fill="${A}" ${LN(4.5)}/>`;
+  if(F.has('domeSpikes'))front+=[[-30,-2],[-24,-22],[-8,-36]].map(([dx,dy])=>`<circle cx="${H.x+dx}" cy="${H.y+dy}" r="4.5" fill="${W}" ${LN(3)}/>`).join('');
+  if(F.has('horns3'))front+=`<path d="M${H.x+2} ${H.y-26} L${H.x+22} ${H.y-58} L${H.x+14} ${H.y-22} Z" fill="${W}" ${LN(4)}/><path d="M${H.x-10} ${H.y-28} L${H.x+2} ${H.y-60} L${H.x+2} ${H.y-26} Z" fill="${W}" ${LN(4)}/><path d="M${H.x+26} ${H.y+2} L${H.x+40} ${H.y-12} L${H.x+31} ${H.y+8} Z" fill="${W}" ${LN(3.5)}/>`;
+  if(F.has('nose'))front+=`<path d="M${H.x+H.r-12} ${H.y-2} L${H.x+H.r+6} ${H.y-34} L${H.x+H.r} ${H.y+4} Z" fill="${W}" ${LN(4)}/>`;
+  if(F.has('bull'))front+=[-4,14].map(o=>`<path d="M${H.x+o-6} ${H.y-26} Q${H.x+o-22} ${H.y-30} ${H.x+o-18} ${H.y-50} Q${H.x+o-8} ${H.y-34} ${H.x+o+4} ${H.y-28} Z" fill="${W}" ${LN(3.5)}/>`).join('');
+  if(F.has('brow'))front+=`<path d="M${H.x+4} ${H.y-H.r+8} L${H.x+12} ${H.y-H.r-6} L${H.x+18} ${H.y-H.r+10} Z" fill="${A}" ${LN(3.5)}/>`;
+  if(F.has('arms')||F.has('thumb'))front+=`<path d="M${Bd.x+30} ${Bd.y+2} q12 4 16 12" fill="none" stroke="${OUT}" stroke-width="11" stroke-linecap="round"/><path d="M${Bd.x+30} ${Bd.y+2} q12 4 16 12" fill="none" stroke="${B}" stroke-width="6" stroke-linecap="round"/>`;
+  if(F.has('thumb'))front+=`<path d="M${Bd.x+44} ${Bd.y+10} L${Bd.x+56} ${Bd.y+2} L${Bd.x+48} ${Bd.y+16} Z" fill="${W}" ${LN(3)}/>`;
+  if(F.has('claws'))[0,6,12].forEach(o=>{const x=Bd.x+30+o,y=Bd.y+4;front+=`<path d="M${x} ${y} q9 10 4 26" fill="none" stroke="${OUT}" stroke-width="7" stroke-linecap="round"/><path d="M${x} ${y} q9 10 4 26" fill="none" stroke="${W}" stroke-width="3" stroke-linecap="round"/>`});
+  if(F.has('feathers'))front+=[[H.x-H.r+4,H.y-20],[H.x-H.r,H.y-8],[H.x-H.r+8,H.y-30]].map(([x,y])=>`<ellipse cx="${x}" cy="${y}" rx="9" ry="4" fill="${A}" ${LN(3)} transform="rotate(-30 ${x} ${y})"/>`).join('')+(tail?`<ellipse cx="14" cy="${Bd.y-38}" rx="12" ry="5" fill="${A}" ${LN(3)} transform="rotate(30 14 ${Bd.y-38})"/>`:'');
+  if(F.has('cheek'))front+=`<path d="M${H.x+2} ${H.y+14} L${H.x-10} ${H.y+26} L${H.x+8} ${H.y+20} Z" fill="${W}" ${LN(3)}/>`;
+  const hasBeak=F.has('beak'),hasBill=F.has('bill');
+  if(hasBill)front+=`<ellipse cx="${H.x+H.r-2}" cy="${H.y+10}" rx="${Math.max(12,H.r*.5)}" ry="${Math.max(7,H.r*.26)}" fill="#f3cf8a" ${LN(3.5)}/>`;
+  if(hasBeak)front+=`<path d="M${H.x+H.r-8} ${H.y-2} Q${H.x+H.r+12} ${H.y+2} ${H.x+H.r+2} ${H.y+16} Q${H.x+H.r-6} ${H.y+12} ${H.x+H.r-10} ${H.y+8} Z" fill="#f0b44a" ${LN(3.5)}/>`;
+  if(d.p==='stripes')pat+=`<path d="M70 ${Bd.y-24} l6 12 M86 ${Bd.y-28} l5 12 M102 ${Bd.y-28} l3 12" stroke="${A}" stroke-width="5" stroke-linecap="round" opacity=".7"/>`;
+  if(d.p==='spots')pat+=[[78,Bd.y-10],[100,Bd.y-16],[118,Bd.y-2],[86,Bd.y+10],[140,60]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="6" fill="${A}" opacity=".55"/>`).join('');
+  if(d.p==='dots')pat+=`<circle cx="78" cy="${Bd.y-10}" r="5" fill="${A}" opacity=".35"/><circle cx="96" cy="${Bd.y-16}" r="4" fill="${A}" opacity=".35"/><circle cx="108" cy="${Bd.y-6}" r="5" fill="${A}" opacity=".35"/>`;
+  if(d.p==='back')pat+=`<path d="M64 ${Bd.y-22} q6 -6 12 0 M84 ${Bd.y-28} q6 -6 12 0 M104 ${Bd.y-26} q6 -6 12 0" stroke="${A}" stroke-width="5" fill="none" stroke-linecap="round"/>`;
+  const ex=H.x+H.r*0.38,ey=H.y-H.r*0.2,er=Math.max(7.5,H.r*0.27);
+  const mouth=(bp==='ptero'||hasBeak)?'':`<path d="M${H.x+H.r-5} ${H.y+H.r*0.38} Q${H.x+H.r*0.4} ${H.y+H.r*0.62} ${H.x+2} ${H.y+H.r*0.42}" fill="none" ${LN(3.5)}/>${F.has('tooth')?`<path d="M${H.x+H.r-14} ${H.y+H.r*0.47} l4 6 l3 -7 Z" fill="#fff" stroke="${OUT}" stroke-width="2"/>`:''}`;
+  return svg('0 0 200 160',`<defs><clipPath id="s">${sil}</clipPath></defs>${back}
+  <g fill="${OUT}" stroke="${OUT}" stroke-width="9" stroke-linejoin="round">${sil}</g><g fill="${B}">${sil}</g>
+  <g clip-path="url(#s)">${pat}<ellipse cx="${Bd.x+12}" cy="${Bd.y+24}" rx="${Bd.rx*.85}" ry="${Bd.ry*.55}" fill="${BE}"/><ellipse cx="${H.x+H.r*0.3}" cy="${H.y+H.r*0.62}" rx="${H.r*0.75}" ry="${H.r*0.38}" fill="${BE}"/><rect x="60" y="141" width="80" height="6" fill="#000" opacity=".12"/></g>
+  ${front}${blush(ex+er*0.4,ey+er*1.6,er)}${eyeSvg(ex,ey,er,eye)}${hasBill||hasBeak?'':`<circle cx="${H.x+H.r-7}" cy="${H.y-3}" r="2.2" fill="${OUT}"/>`}${mouth}`)}
+const dinoCache={};const dinoImg=(id,eye='open')=>dinoCache[id+eye]||(dinoCache[id+eye]=drawDino(dinoById[id],{eye}));
+
+/* ---------- eggs & scene ---------- */
+const EGG_P='M50 6 C80 6 96 52 96 76 C96 102 76 116 50 116 C24 116 4 102 4 76 C4 52 20 6 50 6Z';
+const EGGC={common:{base:'#fbf3df',spot:'#9fd36f'},rare:{base:'#e3f1ff',spot:'#6fa6e6'},legend:{base:'#fff0ad',spot:'#f2a91f'}};
+const ZIG='M0 72 L12 64 L22 74 L34 62 L46 74 L58 62 L70 74 L82 62 L94 72 L100 66';
+function eggBody(rar){const c=EGGC[rar];
+  let sp=[[30,40,9,7],[64,30,7,6],[72,62,11,8],[26,80,8,7],[52,92,10,7],[84,90,6,5],[46,58,5,4]].map(([x,y,a,b])=>`<ellipse cx="${x}" cy="${y}" rx="${a}" ry="${b}" fill="${c.spot}"/>`).join('');
+  if(rar==='legend')sp+=[[36,24],[68,48],[30,100]].map(([x,y])=>`<path d="M${x} ${y-7} L${x+2} ${y-2} L${x+7} ${y} L${x+2} ${y+2} L${x} ${y+7} L${x-2} ${y+2} L${x-7} ${y} L${x-2} ${y-2}Z" fill="#fff"/>`).join('');
+  return `<path d="${EGG_P}" fill="${c.base}"/>${sp}<ellipse cx="32" cy="34" rx="7" ry="14" fill="#fff" opacity=".6" transform="rotate(20 32 34)"/>`}
+function drawEgg(rar,stage){
+  const cr=(stage>=1?`<path d="M38 50 l7 8 l6 -8 l7 9 l6 -7" fill="none" ${LN(3)}/>`:'')+(stage>=2?`<path d="M10 74 l10 -6 l8 8 l10 -10 l9 9 l10 -8 l12 7 l10 -6 l10 4" fill="none" ${LN(3)}/>`:'');
+  return svg('0 0 100 120',`<defs><clipPath id="e"><path d="${EGG_P}"/></clipPath></defs><g clip-path="url(#e)">${eggBody(rar)}</g>${cr}<path d="${EGG_P}" fill="none" ${LN(4.5)}/>`)}
+function drawShell(rar,part){const clip=part==='top'?`M0 0 L100 0 L100 66 L94 72 L82 62 L70 74 L58 62 L46 74 L34 62 L22 74 L12 64 L0 72Z`:`M0 120 L100 120 L100 66 L94 72 L82 62 L70 74 L58 62 L46 74 L34 62 L22 74 L12 64 L0 72Z`;
+  return svg('0 0 100 120',`<defs><clipPath id="p"><path d="${clip}"/></clipPath><clipPath id="e"><path d="${EGG_P}"/></clipPath></defs><g clip-path="url(#p)"><g clip-path="url(#e)">${eggBody(rar)}</g><path d="${EGG_P}" fill="none" ${LN(4.5)}/></g><g clip-path="url(#e)"><path d="${ZIG}" fill="none" ${LN(3.5)}/></g>`)}
+const nestBack=svg('0 0 240 100',`<ellipse cx="120" cy="44" rx="106" ry="28" fill="#6b4526" ${LN(5)}/><ellipse cx="120" cy="48" rx="88" ry="18" fill="#4e3019"/>`);
+const nestFront=(()=>{const r=rng(3);let t='';for(let i=0;i<26;i++){const x=20+r()*200,y=52+r()*30;t+=`<path d="M${x.toFixed(0)} ${y.toFixed(0)} l${(r()*36-18).toFixed(0)} ${(r()*8-4).toFixed(0)}" stroke="${r()<.5?'#8a5a32':'#d9a36a'}" stroke-width="4" stroke-linecap="round"/>`}
+  return svg('0 0 240 100',`<defs><clipPath id="n"><path d="M10 44 C14 96 226 96 230 44 C200 68 40 68 10 44Z"/></clipPath></defs><path d="M10 44 C14 96 226 96 230 44 C200 68 40 68 10 44Z" fill="#b57c48"/><g clip-path="url(#n)">${t}</g><path d="M10 44 C14 96 226 96 230 44 C200 68 40 68 10 44Z" fill="none" ${LN(5)}/>
+  <path d="M8 46 l-6 -10 M232 44 l7 -9 M40 60 l-8 -14 M200 62 l10 -12" stroke="#8a5a32" stroke-width="4" stroke-linecap="round"/>`)})();
+const STONE_P='M18 62 C12 30 42 10 74 12 C110 14 132 36 128 66 C124 94 98 104 68 102 C36 100 22 88 18 62Z';
+const stoneURL=svg('0 0 140 110',`<defs><linearGradient id="t" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ab988a"/><stop offset="1" stop-color="#7b675a"/></linearGradient><clipPath id="k"><path d="${STONE_P}"/></clipPath></defs>
+<path d="${STONE_P}" fill="url(#t)"/><g clip-path="url(#k)"><path d="M26 82 l14 -8 l10 10 l12 -12 M98 26 l8 12 l12 -2 M92 94 l10 -10 l12 4" stroke="#ff9a4a" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<ellipse cx="50" cy="30" rx="20" ry="8" fill="#fff" opacity=".28" transform="rotate(-15 50 30)"/></g><path d="${STONE_P}" fill="none" stroke="#3e2d24" stroke-width="5"/>`);
+const volcanoURL=svg('0 0 300 210',`<circle cx="160" cy="26" r="16" fill="#fff" opacity=".85"/><circle cx="182" cy="16" r="12" fill="#fff" opacity=".8"/><circle cx="144" cy="12" r="10" fill="#fff" opacity=".75"/>
+<path d="M8 208 L118 52 L182 52 L292 208 Z" fill="#b48a6c" ${LN(5)}/><path d="M118 52 L182 52 L172 70 Q150 80 128 70 Z" fill="#ff7a3d" ${LN(4)}/><path d="M140 74 C136 100 128 112 124 130 C122 140 132 140 134 130 C138 112 148 98 150 76 Z" fill="#ff8c4a"/>
+<path d="M60 150 L90 120 M220 160 L196 130" stroke="#9a7257" stroke-width="5" stroke-linecap="round"/>`);
+const palmURL=svg('0 0 160 260',`<path d="M74 256 C78 190 70 120 86 70" fill="none" stroke="${OUT}" stroke-width="20" stroke-linecap="round"/><path d="M74 256 C78 190 70 120 86 70" fill="none" stroke="#a87a4e" stroke-width="13" stroke-linecap="round"/>
+${[0,1,2,3,4].map(i=>`<path d="M68 ${100+i*30} l18 -6" stroke="#8a5f38" stroke-width="3"/>`).join('')}
+${[[-150,40],[-110,44],[-60,40],[-20,42],[20,38]].map(([a,l])=>`<ellipse cx="86" cy="${70-l/2}" rx="13" ry="${l}" fill="#5aa84f" ${LN(4)} transform="rotate(${a+90} 86 70)"/>`).join('')}
+<circle cx="80" cy="78" r="8" fill="#8a5a32" ${LN(3)}/><circle cx="94" cy="80" r="8" fill="#8a5a32" ${LN(3)}/>`);
+const fernURL=svg('0 0 160 100',`${[[-60,46],[-30,52],[0,56],[30,52],[60,46]].map(([a,l])=>`<ellipse cx="80" cy="${98-l/2}" rx="12" ry="${l/2}" fill="${a%60?'#6dbd5b':'#55a548'}" ${LN(4)} transform="rotate(${a} 80 98)"/>`).join('')}`);
+const cloudURL=svg('0 0 120 60',`<path d="M20 52 C4 52 4 30 22 30 C24 12 50 8 58 24 C66 10 94 12 94 32 C112 30 114 52 98 52 Z" fill="#fff" opacity=".95"/>`);
+const groundURL=(()=>{const r=rng(12);let t='';for(let i=0;i<14;i++){const x=4+r()*56,y=8+r()*52;t+=`<path d="M${x.toFixed(1)} ${y.toFixed(1)} l2 -5 M${(x+3).toFixed(1)} ${y.toFixed(1)} l0 -6 M${(x+6).toFixed(1)} ${y.toFixed(1)} l-2 -5" stroke="#a9ca6c" stroke-width="1.6" stroke-linecap="round"/>`}
+  for(let i=0;i<5;i++)t+=`<ellipse cx="${(4+r()*56).toFixed(1)}" cy="${(4+r()*56).toFixed(1)}" rx="2.4" ry="1.6" fill="#c8b998"/>`;return svg('0 0 64 64',`<rect width="64" height="64" fill="#d3e8a0"/>${t}`)})();
+const edgeURL=svg('0 0 56 14',`<path d="M0 14 L0 8 Q7 0 14 8 Q21 0 28 8 Q35 0 42 8 Q49 0 56 8 L56 14Z" fill="#d3e8a0"/>`);
+const schoolURL=svg('0 0 300 260',`<rect x="60" y="40" width="4" height="70" fill="#8a6a4a"/><path d="M64 42 L100 52 L64 62 Z" fill="#f4743b" ${LN(3)}/>
+<rect x="20" y="110" width="260" height="146" rx="8" fill="#ffe2a8" ${LN(5)}/><path d="M6 118 L150 40 L294 118 Z" fill="#e8604c" ${LN(5)}/>
+<circle cx="150" cy="86" r="20" fill="#fff" ${LN(4)}/><path d="M150 86 V74 M150 86 L159 90" ${LN(3)}/>
+${[0,1,2,3].map(i=>`<rect x="${38+i*62-(i>1?0:0)}" y="130" width="40" height="34" rx="6" fill="#bfe6f5" ${LN(4)}/>`).join('')}
+${[0,3].map(i=>`<rect x="${38+i*62}" y="184" width="40" height="34" rx="6" fill="#bfe6f5" ${LN(4)}/>`).join('')}
+<path d="M120 256 V200 a30 30 0 0 1 60 0 V256 Z" fill="#8a5a32" ${LN(4.5)}/><circle cx="168" cy="230" r="4" fill="#f2c84a"/>`);
+const flame=on=>`<svg viewBox="0 0 12 14"><path d="M6 1 C8 4 11 6 11 9 A5 5 0 0 1 1 9 C1 6 4 5 6 1Z" fill="${on?'#f4743b':'#e2dccb'}"/></svg>`;
+
+/* ---------- state ---------- */
+const KEY='dino-gugudan-v1';
+const DEF={v:4,level:'normal',lang:'ko',mode:'mix',tables:[2,3,4,5,6,7,8,9],m:{},solved:0,first:0,sound:true,dex:{},yard:[],egg:null,hatched:0,warmth:0,trips:0,schooled:0};
+let S=JSON.parse(JSON.stringify(DEF));
+try{const raw=localStorage.getItem(KEY);if(raw){const o=JSON.parse(raw);S=Object.assign(S,o);S.v=o.v||0;if(!o.yard&&Array.isArray(o.buddies))S.yard=o.buddies.filter(id=>dinoById[id]).map((id,i)=>({id,u:'m'+i}));delete S.buddies}}catch(e){}
+if(!S.v||S.v<4){if(S.mode==='mul')S.mode='mix';S.level=S.level||'normal';S.v=4}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+function pickSpecies(){const und=DINOS.filter(d=>!S.dex[d.id]);if(!S.hatched)return 'stego';const pool=und.length?und:DINOS;
+  let t=Math.random()*pool.reduce((s,d)=>s+RAR[d.rar].w,0);for(const d of pool){t-=RAR[d.rar].w;if(t<=0)return d.id}return pool[0].id}
+if(!S.egg||!dinoById[S.egg.sp])S.egg={sp:pickSpecies(),warm:0};
+const need=()=>RAR[dinoById[S.egg.sp].rar].need;
+const YARD_MAX=10;
+
+/* ---------- i18n ---------- */
+const L={
+ ko:{title:'공룡알 구구단',wallet:'모은 공룡',play:'문제 풀기',dex:'공룡 도감',rec:'기록',startHint:'정답 화산 돌을 톡 누르거나 알에게 끌어다 줘요.',
+  mul:'곱셈',div:'나눗셈',mix:'섞어서',mulSeg:'곱셈 ×',divSeg:'나눗셈 ÷',sheetTitle:'어떤 문제를 풀까요?',sheetTables:'연습할 단',done:'다 골랐어요',all:'전체',
+  tbl:a=>a+'단',allTables:'2~9단',range:(a,b)=>a+'~'+b+'단',list:t=>t.join('·')+'단',
+  egg:{common:'보통 알',rare:'희귀한 알',legend:'전설의 알'},rar:{common:'보통',rare:'희귀',legend:'전설'},
+  warm:['따뜻해!','꼼지락','고마워!','쑥쑥!'],soon:'곧 태어나요!',cold:'그 돌은 차가워요',crack:'뽀각... 뽀각!',tap:['톡톡','안에서 꿈틀!','따뜻하게 해 줘!'],
+  arrived:e=>e+'이 왔어요!',warmMe:e=>e+'을 따뜻하게 해 줘요!',plus:'+1 온기',combo:n=>n+'번 연속 정답! 보너스 온기 +1',inrow:'연속!',
+  right:'정답! 알이 따뜻해졌어요.',again:'다시 찾아냈어요! 알이 따뜻해졌어요.',
+  hMore:(v,a,b)=>`${v}${nEun(v)} ${a}${nEul(a)} ${b}번 더한 수예요. 한 번 더!`,hLess:(v,a,b)=>`${v}${nEun(v)} ${a}${nEul(a)} ${b}번 더한 수예요. 한 번 덜!`,
+  hOne:'어떤 수에 1을 곱하면 그 수 그대로예요.',hCount:(a,b)=>`${a}씩 ${b}번 뛰어 세어 볼까요?`,
+  dLess:(a,v,c)=>`${a} × ${v} = ${a*v}. ${c}까지 조금 모자라요!`,dMore:(a,v,c)=>`${a} × ${v} = ${a*v}. ${c}보다 커졌어요!`,dCount:(a,c)=>`${a}씩 몇 번 뛰면 ${c}${nGa(c)} 될까요? 세어 봐요.`,
+  newDino:'새로운 공룡이 태어났어요!',meetAgain:'또 만났어요!',soFar:n=>`지금까지 ${n}마리 태어났어요.`,hi:'반가워!',yardFull:'마당이 꽉 찼어요! 학교에 보내 주세요.',
+  yard:n=>`마당 ${n}/10`,toSchool:'학교로 보내기',
+  roundDone:'10문제 끝!',firstTry:(o,w)=>`한 번에 맞힌 문제 <b>${o}</b>개 · 온기 <b>+${w}</b>`,hatchedRound:n=>`이번 판에 공룡 <b>${n}</b>마리가 태어났어요!`,leftWarm:n=>`다음 공룡까지 온기 <b>${n}</b>개 남았어요.`,
+  playAgain:'한 판 더',seeDex:'도감 보기',
+  walkCap:'공룡 친구들이 학교에 가요!',classCap:'공룡들이 학교에서 즐겁게 공부해요!',backYard:'마당으로 돌아가기',emptyYard:'마당이 비었어요. 새 친구를 부화시켜 봐요!',
+  dexTitle:'공룡 도감',found:(g,t)=>`찾은 공룡 ${g} / ${t}`,dexInfo:'태어난 공룡은 마당에서 놀아요. 10마리가 모이면 학교에 보낼 수 있어요.',school:n=>`학교 다녀온 공룡 ${n}마리`,
+  unknown:e=>`${e}을 따뜻하게 해서 만나 봐요.`,filterAll:'전체',
+  recTitle:'구구단 기록',recSub:'세 번 연속 한 번에 맞히면 금빛 칸',solved:'맞힌 문제',firstPct:'한 번에 맞힘',hatchedN:'태어난 공룡',
+  rowLab:(op,a)=>a+'단',colLab:(op,b)=>op==='mul'?'×'+b:'몫 '+b,lg0:'아직 안 만남',lg1:'연습 중',lg2:'거의 다 왔어요',lg3:g=>`금빛 완성 (${g}/72)`,
+  reset:'처음부터 다시 하기',resetQ:'공룡, 알, 기록이 모두 지워져요.',resetYes:'정말 지우기',resetNo:'그만두기',mute:'소리 끄기',unmute:'소리 켜기',langTo:'EN',langAria:'Switch to English',stone:'화산 돌',eggAlt:'공룡 알',settings:'설정',secType:'문제 종류',secLevel:'난이도',lv:{easy:'쉬움',normal:'보통',hard:'어려움'},lvDesc:{easy:'돌 4개 · ×5까지 · 한 번 틀리면 정답이 반짝여요',normal:'돌 6개 · ×9까지 · 두 번 틀리면 정답이 반짝여요',hard:'헷갈리는 돌 · 빈칸 문제(7 × ? = 56) · 반짝임 도움 없음'}},
+ en:{title:'Dino Egg Math',wallet:'Dinos found',play:'Play',dex:'Dino Book',rec:'Progress',startHint:'Tap the right lava stone or drag it to the egg.',
+  mul:'Multiply',div:'Divide',mix:'Mix',mulSeg:'Multiply ×',divSeg:'Divide ÷',sheetTitle:'What should we practice?',sheetTables:'Times tables',done:'Done',all:'All',
+  tbl:a=>'×'+a,allTables:'2–9',range:(a,b)=>a+'–'+b,list:t=>t.join(', '),
+  egg:{common:'common egg',rare:'rare egg',legend:'legendary egg'},rar:{common:'Common',rare:'Rare',legend:'Legendary'},
+  warm:['So warm!','Wiggle!','Thank you!','Growing!'],soon:'Almost hatching!',cold:'That stone is cold',crack:'Crack... crack!',tap:['Tap tap','Something moved!','Keep me warm!'],
+  arrived:e=>'A '+e+' arrived!',warmMe:e=>'Let\'s warm the '+e+'!',plus:'+1 warmth',combo:n=>n+' in a row! Bonus warmth +1',inrow:'in a row!',
+  right:'Correct! The egg got warmer.',again:'You found it! The egg got warmer.',
+  hMore:(v,a,b)=>`${v} is ${a} added ${b} times. One more!`,hLess:(v,a,b)=>`${v} is ${a} added ${b} times. One less!`,
+  hOne:'Any number times 1 stays the same.',hCount:(a,b)=>`Count by ${a}s, ${b} times:`,
+  dLess:(a,v,c)=>`${a} × ${v} = ${a*v}. Not quite ${c} yet!`,dMore:(a,v,c)=>`${a} × ${v} = ${a*v}. That's more than ${c}!`,dCount:(a,c)=>`How many jumps of ${a} make ${c}? Count:`,
+  newDino:'A new dinosaur hatched!',meetAgain:'Hello again!',soFar:n=>`${n} hatched so far.`,hi:'Nice to meet you!',yardFull:'The yard is full! Send them to school.',
+  yard:n=>`Yard ${n}/10`,toSchool:'Send to school',
+  roundDone:'Round complete!',firstTry:(o,w)=>`First try: <b>${o}</b> · Warmth <b>+${w}</b>`,hatchedRound:n=>`<b>${n}</b> dino${n>1?'s':''} hatched this round!`,leftWarm:n=>`<b>${n}</b> more warmth to the next hatch.`,
+  playAgain:'Play again',seeDex:'Dino Book',
+  walkCap:'Off to school we go!',classCap:'The dinos are having fun at school!',backYard:'Back to the yard',emptyYard:'The yard is empty. Let\'s hatch new friends!',
+  dexTitle:'Dino Book',found:(g,t)=>`Found ${g} / ${t}`,dexInfo:'Hatched dinos play in the yard. When 10 gather, you can send them to school.',school:n=>`${n} dinos went to school`,
+  unknown:e=>`Warm a ${e} to meet it.`,filterAll:'All',
+  recTitle:'Progress',recSub:'Three first-try answers in a row turns a square gold',solved:'Solved',firstPct:'First try',hatchedN:'Hatched',
+  rowLab:(op,a)=>(op==='mul'?'×':'÷')+a,colLab:(op,b)=>op==='mul'?'×'+b:'= '+b,lg0:'Not seen yet',lg1:'Practicing',lg2:'Almost there',lg3:g=>`Gold (${g}/72)`,
+  reset:'Start over',resetQ:'All dinos, eggs and progress will be erased.',resetYes:'Erase everything',resetNo:'Cancel',mute:'Mute',unmute:'Unmute',langTo:'한',langAria:'한국어로 바꾸기',stone:'lava stone',eggAlt:'dinosaur egg',settings:'Settings',secType:'Question type',secLevel:'Difficulty',lv:{easy:'Easy',normal:'Normal',hard:'Hard'},lvDesc:{easy:'4 stones · up to ×5 · the answer glows after 1 miss',normal:'6 stones · up to ×9 · the answer glows after 2 misses',hard:'Tricky stones · missing numbers (7 × ? = 56) · no glow help'}}
+};
+const T=()=>L[S.lang]||L.ko;
+const dName=d=>S.lang==='en'?d.en:d.ko,dFact=d=>S.lang==='en'?d.fen:d.fko;
+const eggN=r=>T().egg[r];
+const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+
+/* ---------- sound ---------- */
+let ac=null;
+function tone(seq){if(!S.sound)return;try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();const t0=ac.currentTime;
+  seq.forEach(([f,t,d,type])=>{const o=ac.createOscillator(),g=ac.createGain();o.type=type||'square';o.frequency.value=f;
+    g.gain.setValueAtTime(0.0001,t0+t);g.gain.exponentialRampToValueAtTime(0.06,t0+t+0.01);g.gain.exponentialRampToValueAtTime(0.0001,t0+t+d);
+    o.connect(g).connect(ac.destination);o.start(t0+t);o.stop(t0+t+d+0.03)})}catch(e){}}
+const SND={whoosh:[[420,0,.08,'sine'],[760,.07,.12,'sine']],warm:[[660,0,.07],[880,.08,.1]],bad:[[260,0,.14,'triangle'],[190,.14,.22,'triangle']],
+  drop:[[300,0,.04,'triangle']],crack:[[180,0,.05],[140,.15,.05],[220,.3,.05],[120,.5,.06],[200,.65,.05]],
+  hatch:[[523,0,.1],[659,.1,.1],[784,.2,.1],[1047,.3,.12],[1319,.42,.3]],bonus:[[784,0,.08],[988,.08,.08],[1319,.16,.18]],
+  bell:[[880,0,.35,'sine'],[698,.4,.35,'sine'],[784,.8,.35,'sine'],[523,1.2,.6,'sine']],
+  class:[[523,0,.12,'triangle'],[659,.15,.12,'triangle'],[784,.3,.12,'triangle'],[659,.45,.12,'triangle'],[784,.6,.12,'triangle'],[1047,.75,.3,'triangle']]};
+
+/* ---------- elements ---------- */
+const cage=$('#cage'),seedsEl=$('#seeds'),fx=$('#fx'),eggEl=$('#egg'),bubble=$('#bubble');
+$('#brandEgg').src=drawEgg('legend',0);$('#walletDino').src=dinoImg('trex');
+['cloud1','cloud2'].forEach(i=>$('#'+i).src=cloudURL);$('#volcano').src=volcanoURL;$('#palm').src=palmURL;$('#fern1').src=fernURL;$('#fern2').src=fernURL;
+$('#ground').style.backgroundImage=`url("${groundURL}")`;$('#edge').style.backgroundImage=`url("${edgeURL}")`;
+$('#nestBack').src=nestBack;$('#nestFront').src=nestFront;$('#schoolImg').src=schoolURL;
+
+let bubbleT=null;
+function say(t,ms=1100){bubble.textContent=t;bubble.hidden=false;clearTimeout(bubbleT);bubbleT=setTimeout(()=>bubble.hidden=true,ms)}
+function floatText(t,xPct,yPct){const d=document.createElement('div');d.className='float';d.textContent=t;d.style.left=xPct+'%';d.style.top=yPct+'%';fx.appendChild(d);setTimeout(()=>d.remove(),1100)}
+function toast(t){cage.querySelectorAll('.toast').forEach(e=>e.remove());const d=document.createElement('div');d.className='toast';d.textContent=t;cage.appendChild(d);setTimeout(()=>d.remove(),2700)}
+function confetti(host=fx){if(RM)return;const cols=['#f4743b','#f2b01e','#7cc96b','#5b98e0','#ff8fa3','#fff'];for(let i=0;i<40;i++){const d=document.createElement('div');d.className='confetti';
+  d.style.left=Math.random()*100+'%';d.style.top=(-10-Math.random()*20)+'%';d.style.background=cols[i%cols.length];d.style.animationDelay=Math.random()*.4+'s';host.appendChild(d);setTimeout(()=>d.remove(),2000)}}
+const pick=a=>a[Math.random()*a.length|0];
+
+/* ---------- egg ---------- */
+function eggStage(){const p=S.egg.warm/need();return p>=.75?2:p>=.35?1:0}
+function renderEgg(){eggEl.src=drawEgg(dinoById[S.egg.sp].rar,eggStage())}
+function renderEggUI(){const n=need(),w=Math.min(S.egg.warm,n),rar=dinoById[S.egg.sp].rar;
+  $('#flames').innerHTML=Array.from({length:n},(_,i)=>flame(i<w)).join('');$('#eggName').textContent=cap(eggN(rar));
+  $('#dexCount').textContent=DINOS.filter(d=>S.dex[d.id]).length}
+eggEl.addEventListener('click',()=>{if(busy)return;eggEl.classList.remove('warm');void eggEl.offsetWidth;eggEl.classList.add('warm');say(pick(T().tap))});
+
+/* ---------- yard ---------- */
+function renderYard(){const L2=$('#buddies');const uids=S.yard.map(y=>y.u);
+  [...L2.children].forEach(el=>{if(!uids.includes(el.dataset.u))el.remove()});
+  S.yard.forEach(y=>{if(L2.querySelector(`[data-u="${y.u}"]`))return;const d=dinoById[y.id];const el=document.createElement('div');el.className='buddy';el.dataset.u=y.u;
+    el.innerHTML=`<div class="bb"><img src="${dinoImg(y.id)}" alt=""></div>`;
+    el.style.left=(2+Math.random()*82)+'%';el.style.top=(34+Math.random()*18)+'%';
+    el.addEventListener('click',()=>{hopEl(el);const t=document.createElement('div');t.className='tag';t.textContent=dName(d);el.querySelector('.bb').appendChild(t);setTimeout(()=>t.remove(),1300);tone([[900,0,.06,'sine'],[1200,.07,.08,'sine']])});
+    L2.appendChild(el);setTimeout(()=>wander(el),800+Math.random()*2000)});
+  $('#yardChip').textContent=T().yard(S.yard.length);
+  const full=S.yard.length>=YARD_MAX;$('#schoolBtn').hidden=!full;$('#yardChip').hidden=full}
+function wander(el){if(!el.isConnected)return;if(RM){setTimeout(()=>wander(el),5000);return}
+  const cx=parseFloat(el.style.left),x=Math.max(1,Math.min(86,cx+(Math.random()-.5)*40)),y=34+Math.random()*18,dur=Math.abs(x-cx)*90+400;
+  el.classList.toggle('left',x<cx);el.classList.add('walk');el.style.transitionDuration=dur+'ms';el.style.left=x+'%';el.style.top=y+'%';
+  setTimeout(()=>{el.classList.remove('walk');setTimeout(()=>wander(el),1800+Math.random()*3500)},dur)}
+function hopEl(el){el.classList.remove('hop');void el.offsetWidth;el.classList.add('hop')}
+function buddiesHop(){document.querySelectorAll('.buddy').forEach((el,i)=>setTimeout(()=>hopEl(el),i*70))}
+
+/* ---------- school trip ---------- */
+const FACTS=['2 × 3 = 6','4 × 5 = 20','6 × 7 = 42','18 ÷ 3 = 6','9 × 9 = 81','56 ÷ 8 = 7','3 × 8 = 24','35 ÷ 5 = 7'];
+let tripTimers=[];
+function tripLater(fn,ms){tripTimers.push(setTimeout(fn,RM?Math.min(ms,200):ms))}
+function startTrip(){if(busy||S.yard.length<YARD_MAX)return;const trip=$('#trip'),walk=$('#tripWalk'),cls=$('#tripClass');
+  tripTimers.forEach(clearTimeout);tripTimers=[];
+  trip.hidden=false;walk.style.opacity=1;cls.style.opacity=0;cls.style.pointerEvents='none';$('#tripDone').hidden=true;
+  $('#capWalk').textContent=T().walkCap;$('#capClass').textContent=T().classCap;$('#tripDone').textContent=T().backYard;
+  walk.querySelectorAll('.walker').forEach(e=>e.remove());$('#seats').innerHTML='';
+  const ids=S.yard.map(y=>y.id);
+  ids.forEach((id,i)=>{const w=document.createElement('div');w.className='walker';w.innerHTML=`<img src="${dinoImg(id,'happy')}" alt="">`;w.style.bottom=(25+(i%2)*4)+'%';walk.appendChild(w);
+    tripLater(()=>{w.style.transitionDuration='2400ms';w.style.left='66%'},120+i*230);
+    tripLater(()=>{w.style.transitionDuration='300ms';w.classList.add('in')},120+i*230+2400)});
+  tone(SND.bell);
+  const tClass=120+ids.length*230+2600;
+  tripLater(()=>{walk.style.opacity=0;cls.style.opacity=1;cls.style.pointerEvents='auto';tone(SND.class);
+    let fi=0;const board=$('#board');const cyc=()=>{board.innerHTML=`<span>${FACTS[fi++%FACTS.length]}</span>`;tripLater(cyc,1100)};cyc();
+    const seats=$('#seats');ids.forEach((id,i)=>{const row=i<5?0:1,col=i%5;const s=document.createElement('div');s.className='seat';
+      s.style.left=(12+col*19)+'%';s.style.top=(row?60:36)+'%';s.innerHTML=`<img src="${dinoImg(id,i%3?'open':'happy')}" alt="" style="animation-delay:${-(i*.17)}s"><div class="desk"></div>`;
+      tripLater(()=>{seats.appendChild(s);s.classList.add('pop');tone([[600+i*60,0,.06,'sine']])},i*120)});
+    const notes=()=>{const n=document.createElement('div');n.className='note';n.textContent=pick(['♪','★','♥']);n.style.left=(8+Math.random()*84)+'%';n.style.top=(35+Math.random()*40)+'%';n.style.color=pick(['#f4743b','#f2b01e','#5b98e0','#ff6f91']);cls.appendChild(n);setTimeout(()=>n.remove(),1900);tripLater(notes,280)};notes();
+    tripLater(()=>{$('#tripDone').hidden=false;$('#tripDone').focus()},2200)},tClass)}
+$('#schoolBtn').onclick=startTrip;
+$('#tripDone').onclick=()=>{tripTimers.forEach(clearTimeout);tripTimers=[];$('#trip').hidden=true;$('#tripClass').querySelectorAll('.note').forEach(n=>n.remove());
+  S.schooled+=S.yard.length;S.trips++;S.yard=[];save();renderYard();toast(T().emptyYard);if(document.querySelector('#overlay:not([hidden]) #schoolNow'))$('#overlay').hidden=true;
+  if(hatchWait){const r=hatchWait;hatchWait=null;r()}};
+let hatchWait=null;
+
+/* ---------- quiz ---------- */
+let busy=false,cur=null,review=[],lastKey='',combo=0;
+const R={i:0,res:[],warm:0,hatched:0};
+const keyOf=(op,a,b)=>op==='mul'?`${a}x${b}`:`${a*b}d${a}`;
+const lvl=k=>(S.m[k]||{s:0}).s;
+function pickFact(){
+  const ok=f=>S.tables.includes(f.a)&&(S.mode==='mix'||S.mode===f.op)&&f.key!==lastKey;
+  const due=review.findIndex(r=>r.due<=R.i&&ok(r));if(due>=0)return review.splice(due,1)[0];
+  const ops=S.mode==='mix'?['mul','div']:[S.mode],pool=[];
+  const bMin=S.level==='hard'?2:1,bMax=S.level==='easy'?5:9;
+  ops.forEach(op=>S.tables.forEach(a=>{for(let b=bMin;b<=bMax;b++){const key=keyOf(op,a,b);if(key===lastKey)continue;pool.push([{op,a,b,key},(b===1?1:2)+(3-lvl(key))*3])}}));
+  let t=Math.random()*pool.reduce((s,p)=>s+p[1],0),f=pool[0][0];for(const p of pool){t-=p[1];if(t<=0){f=p[0];break}}
+  if(S.level==='hard'&&f.op==='mul'&&Math.random()<.4)f={...f,blank:true};return f}
+function choices(f){const shuf=a=>a.sort(()=>Math.random()-.5),lv=S.level,n=lv==='easy'?4:6;
+  if(f.op==='div'||f.blank){const b=f.b,set=new Set();
+    if(lv==='hard'){shuf([b-1,b+1,b-2,b+2,b-3,b+3,b+4]).forEach(v=>{if(v>=1&&v<=9&&v!==b&&set.size<n-1)set.add(v)})}
+    if(lv==='easy'){let g=0;while(set.size<n-1&&g++<200){const v=1+Math.random()*9|0;if(Math.abs(v-b)>=2)set.add(v)}}
+    if(lv!=='normal'){let g=0;while(set.size<n-1&&g++<200){const v=1+Math.random()*9|0;if(v!==b)set.add(v)}return shuf([...set,b])}
+  }
+  if(lv==='easy'&&f.op==='mul'){const ans=f.a*f.b,set=new Set();let g=0;while(set.size<3&&g++<300){const v=(2+Math.random()*8|0)*(1+Math.random()*9|0);if(Math.abs(v-ans)>=4)set.add(v)}
+    while(set.size<3){set.add(ans+5+set.size*3)}return shuf([...set,ans])}
+  if(lv==='hard'&&f.op==='mul'){const{a,b}=f,ans=a*b,set=new Set();shuf([a*(b+1),a*(b-1),(a+1)*b,(a-1)*b,ans+1,ans-1,ans+2,ans-2,(a+1)*(b-1),(a-1)*(b+1)]).forEach(v=>{if(v>0&&v!==ans&&set.size<5)set.add(v)});
+    while(set.size<5)set.add(ans+10+set.size);return shuf([...set,ans])}
+  if(f.op==='div'){const b=f.b,set=new Set();shuf([b-1,b+1,b+2,b-2,f.a]).forEach(v=>{if(v>=1&&v<=9&&v!==b&&set.size<3)set.add(v)});
+    while(set.size<5){const v=1+Math.random()*9|0;if(v!==b)set.add(v)}return shuf([...set,b])}
+  const{a,b}=f,ans=a*b,set=new Set();
+  shuf([a*(b+1),a*(b-1),(a+1)*b,(a-1)*b,ans+1,ans-1,ans+10,ans-10]).forEach(v=>{if(v>0&&v!==ans&&set.size<3)set.add(v)});
+  [a*(b+1),a*(b-1),(a+1)*b,(a-1)*b].forEach(v=>{if(v>0&&v!==ans&&set.size<4)set.add(v)});
+  let g=0;while(set.size<5&&g++<200){const v=(2+Math.random()*8|0)*(1+Math.random()*9|0);if(v!==ans)set.add(v)}
+  return shuf([...set,ans])}
+function newQuestion(){
+  const f=pickFact();lastKey=f.key;cur={...f,ans:f.op==='mul'&&!f.blank?f.a*f.b:f.b,first:true,miss:0};
+  const eB=$('#eqB'),an=$('#eqAns');eB.classList.remove('ans','ok');an.classList.remove('ok');
+  $('#eqA').textContent=f.op==='mul'?f.a:f.a*f.b;$('#eqOp').textContent=f.op==='mul'?'×':'÷';
+  if(f.blank){eB.textContent='?';eB.classList.add('ans');an.classList.remove('ans');an.textContent=f.a*f.b}
+  else{eB.textContent=f.op==='mul'?f.b:f.a;an.classList.add('ans');an.textContent='?'}
+  $('#hint').textContent=T().startHint;spawnStones(choices(f));renderPips()}
+function spawnStones(vals){
+  seedsEl.querySelectorAll('.seed').forEach(s=>{s.classList.add('leave');setTimeout(()=>s.remove(),260)});
+  const r=cage.getBoundingClientRect();
+  const els=vals.map(v=>{const b=document.createElement('button');b.type='button';b.className='seed falling';b.dataset.v=v;b.style.backgroundImage=`url("${stoneURL}")`;
+    b.setAttribute('aria-label',T().stone+' '+v);b.innerHTML='<span>'+v+'</span>';seedsEl.appendChild(b);return b});
+  const sw=els[0].offsetWidth,sh=els[0].offsetHeight;
+  const x0=r.width*0.04,x1=r.width*0.96-sw,y0=r.height*0.64,y1=Math.max(y0,r.height*0.97-sh);
+  const per=Math.ceil(vals.length/2),slots=[];for(let row=0;row<2;row++)for(let c=0;c<per;c++){const t=(c+(row?0.5:0))/(per-0.5);slots.push([x0+t*(x1-x0),row?y1:y0])}
+  els.forEach((el,i)=>{const[x,y]=slots[i];const jx=(Math.random()-.5)*r.width*0.05,jy=(Math.random()-.5)*(y1-y0)*0.2;
+    el.style.left=Math.min(Math.max(x+jx,4),r.width-sw-4)/r.width*100+'%';el.style.top=Math.min(Math.max(y+jy,y0-6),r.height-sh-4)/r.height*100+'%';
+    el.style.animationDelay=(i*70)+'ms';el.addEventListener('animationend',e=>{if(e.animationName==='drop')el.classList.remove('falling')});bindStone(el)});
+  setTimeout(()=>tone(SND.drop),250)}
+let drag=null;
+function bindStone(el){
+  el.addEventListener('pointerdown',e=>{if(busy||el.classList.contains('tried'))return;e.preventDefault();el.classList.remove('falling','snap');
+    try{el.setPointerCapture(e.pointerId)}catch(_){}drag={el,sx:e.clientX,sy:e.clientY,moved:false}});
+  el.addEventListener('pointermove',e=>{if(!drag||drag.el!==el)return;const dx=e.clientX-drag.sx,dy=e.clientY-drag.sy;
+    if(!drag.moved&&Math.hypot(dx,dy)>8)drag.moved=true;if(drag.moved)el.style.transform=`translate(${dx}px,${dy}px) scale(1.12)`});
+  const end=(e,cancel)=>{if(!drag||drag.el!==el)return;const d=drag;drag=null;
+    if(!d.moved&&!cancel){choose(el);return}
+    const a=el.getBoundingClientRect(),h=$('#nest').getBoundingClientRect(),pad=24;
+    const over=!cancel&&a.right>h.left-pad&&a.left<h.right+pad&&a.bottom>h.top-h.height-pad&&a.top<h.bottom+pad;
+    if(over&&+el.dataset.v===cur.ans){choose(el);return}
+    el.classList.add('snap');el.style.transform='';if(over)choose(el)};
+  el.addEventListener('pointerup',e=>end(e,false));el.addEventListener('pointercancel',e=>end(e,true));
+  el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();choose(el)}})}
+async function choose(el){
+  if(busy||!cur||el.classList.contains('tried'))return;
+  const v=+el.dataset.v;if(v!==cur.ans){wrong(el,v);return}
+  busy=true;seedsEl.querySelectorAll('.seed').forEach(s=>s.classList.remove('glow'));
+  const er=eggEl.getBoundingClientRect(),sr=el.getBoundingClientRect(),base=el.style.transform.match(/translate\(([-\d.]+)px, ?([-\d.]+)px\)/);
+  const bx=base?+base[1]:0,by=base?+base[2]:0;
+  el.classList.remove('snap');el.classList.add('fly');
+  el.style.transform=`translate(${bx+er.left+er.width/2-(sr.left+sr.width/2)}px,${by+er.top+er.height*.6-(sr.top+sr.height/2)}px) scale(.3) rotate(220deg)`;el.style.opacity='0';
+  tone(SND.whoosh);await wait(RM?60:470);
+  const k=cur.key,m=S.m[k]||(S.m[k]={s:0,r:0,w:0});m.r++;let bonus=0;
+  if(cur.first){m.s=Math.min(3,m.s+1);combo++;S.first++;if(combo%5===0)bonus=1}else combo=0;
+  S.solved++;S.egg.warm+=1+bonus;S.warmth+=1+bonus;R.warm+=1+bonus;R.res.push(cur.first?'ok':'meh');
+  eggEl.classList.remove('warm');void eggEl.offsetWidth;eggEl.classList.add('warm');renderEgg();tone(SND.warm);
+  say(S.egg.warm>=need()?T().soon:pick(T().warm));buddiesHop();
+  const nr=$('#nest').getBoundingClientRect(),cr=cage.getBoundingClientRect();
+  floatText(T().plus,(nr.left+nr.width/2-cr.left)/cr.width*100,(nr.top-cr.top)/cr.height*100-6);
+  if(bonus){setTimeout(()=>tone(SND.bonus),300);toast(T().combo(combo))}
+  const an=cur.blank?$('#eqB'):$('#eqAns');an.textContent=cur.ans;an.classList.add('ok');
+  const eq=cur.op==='mul'?`${cur.a} × ${cur.b} = ${cur.a*cur.b}`:`${cur.a*cur.b} ÷ ${cur.a} = ${cur.b}`;
+  $('#hint').innerHTML=`<b>${eq}</b> ${esc(cur.first?T().right:T().again)}`;
+  save();renderEggUI();renderCombo();
+  await wait(700);
+  if(S.egg.warm>=need())await hatch();
+  R.i++;
+  if(R.i>=10){renderPips();roundEnd();busy=false;return}
+  newQuestion();await wait(400);busy=false}
+function wrong(el,v){
+  el.classList.remove('falling','shake');void el.offsetWidth;el.classList.add('shake','tried');setTimeout(()=>el.classList.remove('shake'),420);
+  tone(SND.bad);say(T().cold);
+  if(cur.first){const m=S.m[cur.key]||(S.m[cur.key]={s:0,r:0,w:0});m.w++;m.s=0;review.push({op:cur.op,a:cur.a,b:cur.b,key:cur.key,due:R.i+3});combo=0;renderCombo();save()}
+  cur.first=false;cur.miss++;
+  const{a,b}=cur,t=T();let lead,seq='';
+  if(cur.op==='mul'&&!cur.blank){
+    if(v===a*(b-1))lead=t.hMore(v,a,b-1);else if(v===a*(b+1))lead=t.hLess(v,a,b+1);else if(b===1)lead=t.hOne;else lead=t.hCount(a,b);
+    if(b>1)seq=`<span class="seq">${Array.from({length:b-1},(_,i)=>a*(i+1)).join(', ')}, ?</span>`;
+  }else{const c=a*b;
+    if(v===b-1)lead=t.dLess(a,v,c);else if(v===b+1)lead=t.dMore(a,v,c);else lead=t.dCount(a,c);
+    seq=`<span class="seq">${Array.from({length:b},(_,i)=>a*(i+1)).join(', ')}</span>`}
+  $('#hint').innerHTML=`<span>${esc(lead)}</span>${seq}`;
+  if(S.level!=='hard'&&cur.miss>=(S.level==='easy'?1:2)){const c=[...seedsEl.querySelectorAll('.seed')].find(s=>+s.dataset.v===cur.ans);if(c)c.classList.add('glow')}}
+async function hatch(){
+  const d=dinoById[S.egg.sp],t=T();seedsEl.querySelectorAll('.seed').forEach(s=>s.style.visibility='hidden');
+  say(t.crack,1400);eggEl.classList.remove('warm');void eggEl.offsetWidth;eggEl.classList.add('big');tone(SND.crack);await wait(RM?150:950);
+  eggEl.classList.remove('big');eggEl.hidden=true;
+  const st=$('#shellTop'),sb=$('#shellBot'),bb=$('#baby');st.src=drawShell(d.rar,'top');sb.src=drawShell(d.rar,'bot');bb.src=dinoImg(d.id,'happy');
+  st.hidden=false;sb.hidden=false;bb.hidden=false;st.classList.remove('top');void st.offsetWidth;st.classList.add('top');
+  confetti();tone(SND.hatch);
+  const first=!S.dex[d.id];S.dex[d.id]=(S.dex[d.id]||0)+1;S.hatched++;R.hatched++;
+  const fitsYard=S.yard.length<YARD_MAX;if(fitsYard)S.yard.push({id:d.id,u:Date.now().toString(36)+Math.random().toString(36).slice(2,6)});
+  const nowFull=S.yard.length>=YARD_MAX;if(nowFull)$('#schoolBtn').hidden=true;
+  save();await wait(1100);
+  await new Promise(res=>{$('#overCard').innerHTML=`<img class="pic" src="${dinoImg(d.id)}" alt=""><span class="rar ${d.rar}">${t.rar[d.rar]}</span>
+    <h2>${first?t.newDino:t.meetAgain}<br>${esc(dName(d))}</h2><p>${esc(dFact(d))}</p>
+    ${first?'':`<p style="color:#7f8a6f;font-size:14px">${t.soFar(S.dex[d.id])}</p>`}${nowFull?`<p style="color:#d4561f;font-size:15px">${t.yardFull}</p>`:''}
+    <div class="row">${nowFull?`<button class="btn sun" id="schoolNow" type="button">${t.toSchool}</button>`:`<button class="btn sun" id="hiBtn" type="button">${t.hi}</button>`}</div>`;
+    $('#overlay').hidden=false;if(!nowFull)$('#hiBtn').onclick=()=>{$('#overlay').hidden=true;res()};
+    if(nowFull)$('#schoolNow').onclick=()=>{$('#overlay').hidden=true;finishHatch();hatchWait=res;busy=false;startTrip();busy=true}});
+  finishHatch()}
+let hatchFinished=false;
+function finishHatch(){if(!$('#baby').hidden||!$('#shellTop').hidden){
+  $('#shellTop').hidden=true;$('#shellBot').hidden=true;$('#baby').hidden=true;
+  S.egg={sp:pickSpecies(),warm:0};save();renderEgg();eggEl.hidden=false;eggEl.classList.remove('dropin');void eggEl.offsetWidth;eggEl.classList.add('dropin');
+  renderYard();renderEggUI();say(T().arrived(eggN(dinoById[S.egg.sp].rar)),1500);
+  seedsEl.querySelectorAll('.seed').forEach(s=>s.style.visibility='')}}
+function roundEnd(){const t=T();
+  const ok=R.res.filter(x=>x==='ok').length,stars=ok>=10?3:ok>=8?2:ok>=5?1:0,left=Math.max(0,need()-S.egg.warm);
+  $('#overCard').innerHTML=`<h2>${t.roundDone}</h2>
+   <div class="stars">${[0,1,2].map(i=>`<span class="${i<stars?'':'off'}">★</span>`).join('')}</div>
+   <p>${t.firstTry(ok,R.warm)}</p><p>${R.hatched?t.hatchedRound(R.hatched):t.leftWarm(left)}</p>
+   <div class="row"><button class="btn sun" id="again" type="button">${t.playAgain}</button><button class="btn" id="toDex" type="button">${t.seeDex}</button></div>`;
+  $('#overlay').hidden=false;if(stars===3)confetti();tone(SND.bonus);
+  $('#again').onclick=()=>{$('#overlay').hidden=true;startRound()};
+  $('#toDex').onclick=()=>{$('#overlay').hidden=true;startRound();setTab('dex')}}
+function startRound(){R.i=0;R.res=[];R.warm=0;R.hatched=0;newQuestion()}
+
+/* ---------- settings ---------- */
+function tablesLabel(){const t=S.tables.slice().sort((a,b)=>a-b),L1=T();if(t.length===8)return L1.allTables;
+  const run=t.every((v,i)=>!i||v===t[i-1]+1);return run&&t.length>2?L1.range(t[0],t[t.length-1]):L1.list(t)}
+function renderSettings(){const t=T(),c=$('#tableChips');c.innerHTML='';
+  for(let a=2;a<=9;a++){const b=document.createElement('button');b.type='button';b.className='chip';b.textContent=t.tbl(a);b.setAttribute('aria-pressed',S.tables.includes(a));
+    b.onclick=()=>{if(S.tables.includes(a)){if(S.tables.length===1)return;S.tables=S.tables.filter(x=>x!==a)}else S.tables=[...S.tables,a].sort();save();renderSettings()};c.appendChild(b)}
+  const all=document.createElement('button');all.type='button';all.className='chip';all.textContent=t.all;all.setAttribute('aria-pressed',S.tables.length===8);
+  all.onclick=()=>{S.tables=[2,3,4,5,6,7,8,9];save();renderSettings()};c.appendChild(all);
+  document.querySelectorAll('#modeSeg button').forEach(b=>{b.setAttribute('aria-pressed',b.dataset.mode===S.mode);b.textContent=b.dataset.mode==='mul'?t.mulSeg:b.dataset.mode==='div'?t.divSeg:t.mix});
+  document.querySelectorAll('#levelSeg button').forEach(b=>{b.setAttribute('aria-pressed',b.dataset.level===S.level);b.textContent=t.lv[b.dataset.level]});
+  $('#lvlDesc').textContent=t.lvDesc[S.level];$('#secType').textContent=t.secType;$('#secLevel').textContent=t.secLevel;
+  $('#setBtn').innerHTML='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>'+t[S.mode]+' · '+t.lv[S.level];$('#setBtn').setAttribute('aria-label',t.settings+': '+t[S.mode]+', '+t.lv[S.level]+', '+tablesLabel())}
+document.querySelectorAll('#levelSeg button').forEach(b=>b.onclick=()=>{S.level=b.dataset.level;save();renderSettings()});
+document.querySelectorAll('#modeSeg button').forEach(b=>b.onclick=()=>{S.mode=b.dataset.mode;save();renderSettings()});
+let sheetSnap='';
+$('#setBtn').onclick=()=>{sheetSnap=S.mode+S.level+S.tables.join();$('#sheet').hidden=false};
+function closeSheet(){$('#sheet').hidden=true;if(!busy&&sheetSnap!==S.mode+S.level+S.tables.join()){review=[];newQuestion()}}
+$('#sheetDone').onclick=closeSheet;$('#sheet').addEventListener('click',e=>{if(e.target.id==='sheet')closeSheet()});
+function renderPips(){$('#pips').innerHTML=Array.from({length:10},(_,i)=>`<span class="pip ${R.res[i]||(i===R.i?'now':'')}"></span>`).join('')}
+function renderCombo(){$('#combo').textContent=combo;$('#comboTxt').textContent=T().inrow;$('#comboBox').hidden=combo<2}
+const SPK=on=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/>${on?'<path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/>':'<path d="m17 9 5 6M22 9l-5 6"/>'}</svg>`;
+function renderSound(){const b=$('#soundBtn');b.innerHTML=SPK(S.sound);b.setAttribute('aria-label',S.sound?T().mute:T().unmute)}
+
+/* ---------- dex ---------- */
+let dexFilter='all';
+function renderDex(){const t=T(),P=$('#panel-dex'),got=DINOS.filter(d=>S.dex[d.id]).length;
+  let h=`<div style="display:flex;flex-direction:column;gap:6px"><div class="sec-h"><h2>${t.dexTitle}</h2><span>${t.found(got,DINOS.length)}</span></div><div class="bar"><i style="width:${got/DINOS.length*100}%"></i></div>
+   <span class="label" style="font-size:13px">${t.dexInfo}${S.schooled?' · '+t.school(S.schooled):''}</span></div>
+   <div class="dex-filter">${['all','common','rare','legend'].map(f=>`<button type="button" class="chip" data-f="${f}" aria-pressed="${dexFilter===f}">${f==='all'?t.filterAll:t.rar[f]} ${f==='all'?'':`${DINOS.filter(d=>d.rar===f&&S.dex[d.id]).length}/${DINOS.filter(d=>d.rar===f).length}`}</button>`).join('')}</div><div class="grid">`;
+  DINOS.filter(d=>dexFilter==='all'||d.rar===dexFilter).forEach(d=>{const n=S.dex[d.id]||0;
+    if(!n){h+=`<div class="dino unknown"><div class="pv"><img src="${dinoImg(d.id)}" alt="" loading="lazy"></div><h3>???</h3><div class="meta"><span class="rar ${d.rar}">${t.rar[d.rar]}</span></div><p>${esc(t.unknown(eggN(d.rar)))}</p></div>`;return}
+    h+=`<div class="dino"><div class="pv"><img src="${dinoImg(d.id)}" alt="" loading="lazy"><span class="cnt">×${n}</span></div><h3>${esc(dName(d))}</h3><div class="meta"><span class="rar ${d.rar}">${t.rar[d.rar]}</span></div><p>${esc(dFact(d))}</p></div>`});
+  P.innerHTML=h+'</div>';
+  P.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{dexFilter=b.dataset.f;renderDex()})}
+
+/* ---------- record ---------- */
+let recOp='mul',resetArm=false;
+function renderRec(){const t=T(),P=$('#panel-rec');let gold=0,rows='';
+  for(let a=2;a<=9;a++){let cells='',g=0;for(let b=1;b<=9;b++){const k=keyOf(recOp,a,b),l=lvl(k),seen=S.m[k];if(l===3)g++;
+      const lab=recOp==='mul'?(l===3?a*b:a+'×'+b):(l===3?b:(a*b)+'÷'+a);
+      cells+=`<td class="${seen?'l'+Math.max(1,l):''}" title="${recOp==='mul'?`${a}×${b}=${a*b}`:`${a*b}÷${a}=${b}`}">${lab}</td>`}
+    gold+=g;rows+=`<tr><th scope="row">${t.rowLab(recOp,a)}</th>${cells}<td class="row-sum">${g}/9</td></tr>`}
+  const rate=S.solved?Math.round(S.first/S.solved*100):0;
+  P.innerHTML=`<div class="sec-h"><h2>${t.recTitle}</h2><span>${t.recSub}</span></div>
+   <div class="tiles"><div class="tile"><div class="label">${t.solved}</div><b>${S.solved}</b></div><div class="tile"><div class="label">${t.firstPct}</div><b>${rate}%</b></div><div class="tile"><div class="label">${t.hatchedN}</div><b>${S.hatched}</b></div></div>
+   <div class="seg" style="max-width:300px;grid-template-columns:1fr 1fr"><button type="button" data-op="mul" aria-pressed="${recOp==='mul'}">${t.mul}</button><button type="button" data-op="div" aria-pressed="${recOp==='div'}">${t.div}</button></div>
+   <div class="tbl-wrap"><table class="mx"><thead><tr><th></th>${[1,2,3,4,5,6,7,8,9].map(b=>`<th scope="col">${t.colLab(recOp,b)}</th>`).join('')}<th></th></tr></thead><tbody>${rows}</tbody></table></div>
+   <div class="legend"><span><i style="background:var(--track)"></i>${t.lg0}</span><span><i style="background:var(--lava-soft)"></i>${t.lg1}</span><span><i style="background:var(--leaf-soft)"></i>${t.lg2}</span><span><i style="background:var(--gold)"></i>${t.lg3(gold)}</span></div>
+   <div class="danger">${resetArm?`<span>${t.resetQ}</span><button type="button" class="btn" id="rsYes">${t.resetYes}</button><button type="button" class="btn" id="rsNo">${t.resetNo}</button>`
+     :`<button type="button" class="btn" id="rsArm">${t.reset}</button>`}</div>`;
+  P.querySelectorAll('[data-op]').forEach(b=>b.onclick=()=>{recOp=b.dataset.op;renderRec()});
+  if(resetArm){$('#rsYes').onclick=()=>{const keep={sound:S.sound,lang:S.lang};S=JSON.parse(JSON.stringify(DEF));Object.assign(S,keep);S.egg={sp:pickSpecies(),warm:0};save();resetArm=false;combo=0;review=[];
+      renderEgg();renderEggUI();renderYard();renderSettings();renderCombo();startRound();renderRec()};$('#rsNo').onclick=()=>{resetArm=false;renderRec()}}
+  else $('#rsArm').onclick=()=>{resetArm=true;renderRec()}}
+
+/* ---------- tabs & language ---------- */
+let view='play';
+function setTab(t){view=t;$('#app').dataset.view=t;['play','dex','rec'].forEach(k=>$('#tab-'+k).setAttribute('aria-selected',k===t));
+  $('#panel-dex').hidden=t!=='dex';$('#panel-rec').hidden=t!=='rec';seedsEl.hidden=t!=='play';
+  if(t==='dex')renderDex();if(t==='rec')renderRec();$('#scroll').scrollTop=0}
+$('#tab-play').onclick=()=>setTab('play');$('#tab-dex').onclick=()=>setTab('dex');$('#tab-rec').onclick=()=>setTab('rec');
+$('#wallet').onclick=()=>setTab('dex');
+$('#soundBtn').onclick=()=>{S.sound=!S.sound;save();renderSound();tone(SND.warm)};
+function applyLang(){const t=T();document.documentElement.lang=S.lang;document.title=t.title;
+  $('#appTitle').textContent=t.title;$('#wallet').title=t.wallet;$('#langBtn').textContent=t.langTo;$('#langBtn').setAttribute('aria-label',t.langAria);
+  $('#tabPlay').textContent=t.play;$('#tabDex').textContent=t.dex;$('#tabRec').textContent=t.rec;
+  $('#sheetTitle').textContent=t.sheetTitle;$('#sheetTables').textContent=t.sheetTables;$('#sheetDone').textContent=t.done;$('#schoolTxt').textContent=t.toSchool;
+  eggEl.alt=t.eggAlt;seedsEl.querySelectorAll('.seed').forEach(s=>s.setAttribute('aria-label',t.stone+' '+s.dataset.v));
+  if(cur&&!$('#eqAns').classList.contains('ok'))$('#hint').textContent=t.startHint;
+  renderSettings();renderSound();renderEggUI();renderYard();renderCombo();if(view==='dex')renderDex();if(view==='rec')renderRec()}
+$('#langBtn').onclick=()=>{S.lang=S.lang==='ko'?'en':'ko';save();applyLang()};
+
+/* ---------- boot ---------- */
+applyLang();renderEgg();
+requestAnimationFrame(()=>{startRound();setTimeout(()=>say(T().warmMe(eggN(dinoById[S.egg.sp].rar)),1800),700)});
+window.__dino={DINOS,dinoImg,S,startTrip};
+})();
+</script>
