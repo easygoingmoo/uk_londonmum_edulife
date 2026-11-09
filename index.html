@@ -272,6 +272,28 @@ table.mx{border-collapse:separate;border-spacing:4px;font-variant-numeric:tabula
 /* very narrow phones */
 .brand{flex:1 1 auto;min-width:0}.brand h1{overflow:hidden;text-overflow:ellipsis}
 @media (max-width:380px){.brand img{width:18px}.brand h1{font-size:16px}.top{gap:6px}.top-right{gap:5px}.wallet{padding:3px 9px 3px 6px;gap:4px}.wallet img{width:18px}.wallet b{font-size:15px}.wallet small{display:none}.icon-btn{width:32px;height:32px}.lang-btn{padding:0 9px;font-size:13px}.icon-btn svg{width:18px;height:18px}.sign{font-size:clamp(26px,8vw,34px)}}
+/* help button + guided tour */
+.q-actions{display:flex;gap:6px;align-items:center}
+.help-btn{width:30px;height:30px;border-radius:50%;border:0;background:var(--leaf-soft);color:var(--leaf);font-family:var(--f-display);font-size:18px;line-height:1;display:grid;place-items:center;flex:none}
+.tour{position:fixed;inset:0;z-index:95;pointer-events:none}
+.tour .blk{position:fixed;pointer-events:auto;background:transparent}
+.tour .hole{position:fixed;border-radius:18px;box-shadow:0 0 0 9999px rgba(25,30,20,.6);outline:3px solid #ffd23d;outline-offset:2px;transition:all .3s ease;pointer-events:none}
+.tour .hole.pulse{animation:holePulse 1.2s ease-in-out infinite}
+@keyframes holePulse{0%,100%{outline-color:#ffd23d}50%{outline-color:#fff}}
+.tour .tip{position:fixed;pointer-events:auto;width:min(330px,calc(100vw - 24px));background:#fff;color:#3d3a2e;border-radius:22px;box-shadow:0 12px 30px rgba(0,0,0,.3);padding:14px 16px 12px;display:flex;flex-direction:column;gap:8px;transition:top .3s ease,left .3s ease}
+.tour .tip .row1{display:flex;gap:10px;align-items:flex-start}
+.tour .tip img{width:58px;flex:none}
+.tour .tip h3{margin:0;font-family:var(--f-display);font-weight:400;font-size:18px;line-height:1.3}
+.tour .tip p{margin:2px 0 0;font-size:14.5px;line-height:1.45}
+.tour .tip .try{font-family:var(--f-display);color:#d4561f;font-size:15px}
+.tour .tip .row2{display:flex;align-items:center;gap:6px}
+.tour .tip .dots{display:flex;gap:4px;flex:1}
+.tour .tip .dots i{width:7px;height:7px;border-radius:50%;background:#e2dccb}
+.tour .tip .dots i.on{background:#f4743b}
+.tour .tip button{font-family:var(--f-display);font-size:14px;border-radius:12px;padding:6px 12px;border:2px solid #dce8d2;background:#fff;color:#3d3a2e}
+.tour .tip button.go{background:#f4743b;border-color:#f4743b;color:#fff}
+.tour .tip button.skip{border:0;color:#7f8a6f;padding:6px 4px}
+@media (prefers-reduced-motion:reduce){.tour .hole{transition:none;animation:none}.tour .tip{transition:none}}
 /* v3 additions: language toggle, yard counter, school trip */
 .lang-btn{width:auto;padding:0 12px;border-radius:999px;font-family:var(--f-display);font-size:14px;color:var(--lava-d)}
 .chipx.yard b{font-weight:400}
@@ -330,7 +352,7 @@ img{max-width:100%}
       <div class="sign" aria-live="polite"><span id="eqA">7</span><span class="op" id="eqOp">×</span><span id="eqB">8</span><span class="op">=</span><span class="ans" id="eqAns">?</span></div>
       <div class="q-meta">
         <div class="pips" id="pips"></div>
-        <button class="pill-btn" id="setBtn" type="button"></button>
+        <div class="q-actions"><button class="help-btn" id="helpBtn" type="button">?</button><button class="pill-btn" id="setBtn" type="button"></button></div>
       </div>
     </div>
     <p class="hint" id="hint"></p>
@@ -389,6 +411,9 @@ img{max-width:100%}
   </div></div>
 </div>
 
+<div class="tour" id="tour" hidden><div class="blk" id="tbT"></div><div class="blk" id="tbB"></div><div class="blk" id="tbL"></div><div class="blk" id="tbR"></div><div class="hole" id="tHole"></div>
+  <div class="tip" id="tTip" role="dialog" aria-live="polite"><div class="row1"><img id="tImg" alt=""><div><h3 id="tTitle"></h3><p id="tText"></p></div></div><div class="row2"><div class="dots" id="tDots"></div><button class="skip" id="tSkip" type="button"></button><button id="tPrev" type="button"></button><button class="go" id="tNext" type="button"></button></div></div>
+</div>
 <div class="trip" id="trip" hidden>
   <div class="scene walk" id="tripWalk"><div class="road"></div><img class="school" id="schoolImg" alt=""><div class="cap" id="capWalk"></div></div>
   <div class="scene class" id="tripClass" style="opacity:0"><div class="board" id="board"></div><div id="seats"></div><div class="cap" id="capClass"></div><button class="done" id="tripDone" type="button" hidden></button></div>
@@ -616,10 +641,10 @@ const flame=on=>`<svg viewBox="0 0 12 14"><path d="M6 1 C8 4 11 6 11 9 A5 5 0 0 
 
 /* ---------- state ---------- */
 const KEY='dino-gugudan-v1';
-const DEF={v:4,level:'normal',lang:'ko',mode:'mix',tables:[2,3,4,5,6,7,8,9],m:{},solved:0,first:0,sound:true,dex:{},yard:[],egg:null,hatched:0,warmth:0,trips:0,schooled:0};
+const DEF={v:5,level:'normal',lang:'ko',mode:'mul',tables:[2,3,4,5,6,7,8,9],m:{},solved:0,first:0,sound:true,dex:{},yard:[],egg:null,hatched:0,warmth:0,trips:0,schooled:0};
 let S=JSON.parse(JSON.stringify(DEF));
 try{const raw=localStorage.getItem(KEY);if(raw){const o=JSON.parse(raw);S=Object.assign(S,o);S.v=o.v||0;if(!o.yard&&Array.isArray(o.buddies))S.yard=o.buddies.filter(id=>dinoById[id]).map((id,i)=>({id,u:'m'+i}));delete S.buddies}}catch(e){}
-if(!S.v||S.v<4){if(S.mode==='mul')S.mode='mix';S.level=S.level||'normal';S.v=4}
+if(!S.v||S.v<5){if(!S.mode||S.mode==='mix')S.mode='mul';S.level=S.level||'normal';S.v=5}
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
 function pickSpecies(){const und=DINOS.filter(d=>!S.dex[d.id]);if(!S.hatched)return 'stego';const pool=und.length?und:DINOS;
   let t=Math.random()*pool.reduce((s,d)=>s+RAR[d.rar].w,0);for(const d of pool){t-=RAR[d.rar].w;if(t<=0)return d.id}return pool[0].id}
@@ -648,7 +673,7 @@ const L={
   unknown:e=>`${e}을 따뜻하게 해서 만나 봐요.`,filterAll:'전체',
   recTitle:'구구단 기록',recSub:'세 번 연속 한 번에 맞히면 금빛 칸',solved:'맞힌 문제',firstPct:'한 번에 맞힘',hatchedN:'태어난 공룡',
   rowLab:(op,a)=>a+'단',colLab:(op,b)=>op==='mul'?'×'+b:'몫 '+b,lg0:'아직 안 만남',lg1:'연습 중',lg2:'거의 다 왔어요',lg3:g=>`금빛 완성 (${g}/72)`,
-  reset:'처음부터 다시 하기',resetQ:'공룡, 알, 기록이 모두 지워져요.',resetYes:'정말 지우기',resetNo:'그만두기',mute:'소리 끄기',unmute:'소리 켜기',langTo:'EN',langAria:'Switch to English',stone:'화산 돌',eggAlt:'공룡 알',settings:'설정',secType:'문제 종류',secLevel:'난이도',lv:{easy:'쉬움',normal:'보통',hard:'어려움'},lvDesc:{easy:'돌 4개 · ×5까지 · 한 번 틀리면 정답이 반짝여요',normal:'돌 6개 · ×9까지 · 두 번 틀리면 정답이 반짝여요',hard:'헷갈리는 돌 · 빈칸 문제(7 × ? = 56) · 반짝임 도움 없음'}},
+  reset:'처음부터 다시 하기',resetQ:'공룡, 알, 기록이 모두 지워져요.',resetYes:'정말 지우기',resetNo:'그만두기',mute:'소리 끄기',unmute:'소리 켜기',langTo:'EN',langAria:'Switch to English',stone:'화산 돌',eggAlt:'공룡 알',settings:'설정',secType:'문제 종류',secLevel:'난이도',lv:{easy:'쉬움',normal:'보통',hard:'어려움'},help:'도움말',tour:{skip:'건너뛰기',prev:'이전',next:'다음',start:'시작하기',steps:[['구구단 문제','여기에 문제가 나와요. 곱셈이나 나눗셈의 답을 찾아봐요.'],['직접 해 볼까요?','정답이 적힌 화산 돌을 톡 누르거나, 알에게 끌어다 주세요.','정답 돌을 눌러 보세요!','틀려도 괜찮아요. 위에 나온 힌트를 보고 다시 골라 봐요.'],['알 온도','정답을 맞힐 때마다 불꽃이 하나씩 켜져요. 불꽃이 다 차면 알에서 공룡이 태어나요!'],['힌트','틀리면 여기에 뛰어 세기 힌트가 나와요. 7, 14, 21... 하고 세어 보면 답이 보여요.'],['공룡 마당','태어난 공룡은 마당에서 놀아요. 10마리가 모이면 학교에 보내요!'],['설정','곱셈, 나눗셈, 섞어서와 난이도, 연습할 단을 여기서 골라요.'],['공룡 도감','지금까지 만난 공룡을 볼 수 있어요. 50종을 모두 모아 봐요!'],['한국어 / English','이 버튼을 누르면 영어로 바꿀 수 있어요.'],['준비 끝!','이제 알을 따뜻하게 해서 공룡 친구를 만나 봐요.']]},lvDesc:{easy:'돌 4개 · ×5까지 · 한 번 틀리면 정답이 반짝여요',normal:'돌 6개 · ×9까지 · 두 번 틀리면 정답이 반짝여요',hard:'헷갈리는 돌 · 빈칸 문제(7 × ? = 56) · 반짝임 도움 없음'}},
  en:{title:'Dino Egg Math',wallet:'Dinos found',play:'Play',dex:'Dino Book',rec:'Progress',startHint:'Tap the right lava stone or drag it to the egg.',
   mul:'Multiply',div:'Divide',mix:'Mix',mulSeg:'Multiply ×',divSeg:'Divide ÷',sheetTitle:'What should we practice?',sheetTables:'Times tables',done:'Done',all:'All',
   tbl:a=>'×'+a,allTables:'2–9',range:(a,b)=>a+'–'+b,list:t=>t.join(', '),
@@ -668,7 +693,7 @@ const L={
   unknown:e=>`Warm a ${e} to meet it.`,filterAll:'All',
   recTitle:'Progress',recSub:'Three first-try answers in a row turns a square gold',solved:'Solved',firstPct:'First try',hatchedN:'Hatched',
   rowLab:(op,a)=>(op==='mul'?'×':'÷')+a,colLab:(op,b)=>op==='mul'?'×'+b:'= '+b,lg0:'Not seen yet',lg1:'Practicing',lg2:'Almost there',lg3:g=>`Gold (${g}/72)`,
-  reset:'Start over',resetQ:'All dinos, eggs and progress will be erased.',resetYes:'Erase everything',resetNo:'Cancel',mute:'Mute',unmute:'Unmute',langTo:'한',langAria:'한국어로 바꾸기',stone:'lava stone',eggAlt:'dinosaur egg',settings:'Settings',secType:'Question type',secLevel:'Difficulty',lv:{easy:'Easy',normal:'Normal',hard:'Hard'},lvDesc:{easy:'4 stones · up to ×5 · the answer glows after 1 miss',normal:'6 stones · up to ×9 · the answer glows after 2 misses',hard:'Tricky stones · missing numbers (7 × ? = 56) · no glow help'}}
+  reset:'Start over',resetQ:'All dinos, eggs and progress will be erased.',resetYes:'Erase everything',resetNo:'Cancel',mute:'Mute',unmute:'Unmute',langTo:'한',langAria:'한국어로 바꾸기',stone:'lava stone',eggAlt:'dinosaur egg',settings:'Settings',secType:'Question type',secLevel:'Difficulty',lv:{easy:'Easy',normal:'Normal',hard:'Hard'},help:'Help',tour:{skip:'Skip',prev:'Back',next:'Next',start:'Let\'s play',steps:[['Times-table question','The question shows up here. Find the answer to the multiplication or division.'],['Try it yourself!','Tap the lava stone with the right answer, or drag it to the egg.','Tap the right stone!','That\'s okay! Read the hint above and try again.'],['Egg warmth','Each right answer lights a flame. When all flames are lit, a dinosaur hatches!'],['Hints','If you miss, a counting hint shows up here. Count 7, 14, 21... to find the answer.'],['Dino yard','Hatched dinos play in the yard. When 10 gather, send them to school!'],['Settings','Choose multiply, divide or mix, the difficulty, and which tables to practice.'],['Dino Book','See every dinosaur you have met. Try to collect all 50!'],['한국어 / English','Tap here to switch the language to Korean.'],['All set!','Warm up the egg and meet your dinosaur friends.']]},lvDesc:{easy:'4 stones · up to ×5 · the answer glows after 1 miss',normal:'6 stones · up to ×9 · the answer glows after 2 misses',hard:'Tricky stones · missing numbers (7 × ? = 56) · no glow help'}}
 };
 const T=()=>L[S.lang]||L.ko;
 const dName=d=>S.lang==='en'?d.en:d.ko,dFact=d=>S.lang==='en'?d.fen:d.fko;
@@ -821,7 +846,7 @@ function bindStone(el){
 async function choose(el){
   if(busy||!cur||el.classList.contains('tried'))return;
   const v=+el.dataset.v;if(v!==cur.ans){wrong(el,v);return}
-  busy=true;seedsEl.querySelectorAll('.seed').forEach(s=>s.classList.remove('glow'));
+  busy=true;seedsEl.querySelectorAll('.seed').forEach(s=>s.classList.remove('glow'));tourCorrect();
   const er=eggEl.getBoundingClientRect(),sr=el.getBoundingClientRect(),base=el.style.transform.match(/translate\(([-\d.]+)px, ?([-\d.]+)px\)/);
   const bx=base?+base[1]:0,by=base?+base[2]:0;
   el.classList.remove('snap');el.classList.add('fly');
@@ -845,6 +870,7 @@ async function choose(el){
   if(R.i>=10){renderPips();roundEnd();busy=false;return}
   newQuestion();await wait(400);busy=false}
 function wrong(el,v){
+  setTimeout(tourWrong,0);
   el.classList.remove('falling','shake');void el.offsetWidth;el.classList.add('shake','tried');setTimeout(()=>el.classList.remove('shake'),420);
   tone(SND.bad);say(T().cold);
   if(cur.first){const m=S.m[cur.key]||(S.m[cur.key]={s:0,r:0,w:0});m.w++;m.s=0;review.push({op:cur.op,a:cur.a,b:cur.b,key:cur.key,due:R.i+3});combo=0;renderCombo();save()}
@@ -956,7 +982,7 @@ function setTab(t){view=t;$('#app').dataset.view=t;['play','dex','rec'].forEach(
 $('#tab-play').onclick=()=>setTab('play');$('#tab-dex').onclick=()=>setTab('dex');$('#tab-rec').onclick=()=>setTab('rec');
 $('#wallet').onclick=()=>setTab('dex');
 $('#soundBtn').onclick=()=>{S.sound=!S.sound;save();renderSound();tone(SND.warm)};
-function applyLang(){const t=T();document.documentElement.lang=S.lang;document.title=t.title;
+function applyLang(){const t=T();document.documentElement.lang=S.lang;document.title=t.title;$('#helpBtn').setAttribute('aria-label',t.help);$('#helpBtn').title=t.help;if(TOUR.on&&!$('#tour').hidden)setTimeout(tourDraw,0);
   $('#appTitle').textContent=t.title;$('#wallet').title=t.wallet;$('#langBtn').textContent=t.langTo;$('#langBtn').setAttribute('aria-label',t.langAria);
   $('#tabPlay').textContent=t.play;$('#tabDex').textContent=t.dex;$('#tabRec').textContent=t.rec;
   $('#sheetTitle').textContent=t.sheetTitle;$('#sheetTables').textContent=t.sheetTables;$('#sheetDone').textContent=t.done;$('#schoolTxt').textContent=t.toSchool;
@@ -964,6 +990,56 @@ function applyLang(){const t=T();document.documentElement.lang=S.lang;document.t
   if(cur&&!$('#eqAns').classList.contains('ok'))$('#hint').textContent=t.startHint;
   renderSettings();renderSound();renderEggUI();renderYard();renderCombo();if(view==='dex')renderDex();if(view==='rec')renderRec()}
 $('#langBtn').onclick=()=>{S.lang=S.lang==='ko'?'en':'ko';save();applyLang()};
+
+
+/* ---------- guided tour ---------- */
+const TOUR={on:false,i:0,wait:false,mode:'',timer:null};
+const TSTEPS=[
+ {el:()=>$('.sign')},
+ {el:()=>{const ss=[...seedsEl.querySelectorAll('.seed:not(.leave)')];if(!ss.length)return null;const r=ss.map(s=>s.getBoundingClientRect());
+   return {left:Math.min(...r.map(x=>x.left)),top:Math.min(...r.map(x=>x.top)),right:Math.max(...r.map(x=>x.right)),bottom:Math.max(...r.map(x=>x.bottom))}},act:true},
+ {el:()=>$('.hud .chipx')},
+ {el:()=>$('#hint')},
+ {el:()=>$('#yardChip').hidden?$('#schoolBtn'):$('#yardChip')},
+ {el:()=>$('#setBtn')},
+ {el:()=>$('#tab-dex')},
+ {el:()=>$('#langBtn')},
+ {el:()=>null}
+];
+function tourRect(){const s=TSTEPS[TOUR.i];const e=s.el();if(!e)return null;const r=e.getBoundingClientRect?e.getBoundingClientRect():e;const p=6;
+  return {l:r.left-p,t:r.top-p,w:(r.right-r.left)+p*2,h:(r.bottom-r.top)+p*2}}
+function tourDraw(){if(!TOUR.on)return;const t=T().tour,st=t.steps[TOUR.i],S0=TSTEPS[TOUR.i],W=innerWidth,H=innerHeight;
+  const r=tourRect(),hole=$('#tHole'),tip=$('#tTip');
+  if(r){hole.style.display='';Object.assign(hole.style,{left:r.l+'px',top:r.t+'px',width:r.w+'px',height:r.h+'px'})}
+  else{hole.style.display='';Object.assign(hole.style,{left:W/2+'px',top:H/2+'px',width:'0px',height:'0px'})}
+  hole.classList.toggle('pulse',!!S0.act);
+  const R=r||{l:W/2,t:H/2,w:0,h:0};
+  // click blockers around the hole (only the hole lets touches through on the try-it step)
+  const open=!!S0.act;const set=(id,l,t2,w,h)=>Object.assign($(id).style,{left:l+'px',top:t2+'px',width:Math.max(0,w)+'px',height:Math.max(0,h)+'px'});
+  if(open){set('#tbT',0,0,W,R.t);set('#tbB',0,R.t+R.h,W,H-R.t-R.h);set('#tbL',0,R.t,R.l,R.h);set('#tbR',R.l+R.w,R.t,W-R.l-R.w,R.h)}
+  else{set('#tbT',0,0,W,H);set('#tbB',0,0,0,0);set('#tbL',0,0,0,0);set('#tbR',0,0,0,0)}
+  $('#tTitle').textContent=st[0];
+  $('#tText').innerHTML=esc(TOUR.mode==='wrong'&&st[3]?st[3]:st[1])+(S0.act?`<br><span class="try">${esc(st[2])}</span>`:'');
+  $('#tImg').src=dinoImg(['stego','trike','trex','para','brachio','raptor','ptera','galli','trex'][TOUR.i]||'stego','happy');
+  $('#tDots').innerHTML=TSTEPS.map((_,k)=>`<i class="${k===TOUR.i?'on':''}"></i>`).join('');
+  $('#tSkip').textContent=t.skip;$('#tPrev').textContent=t.prev;$('#tNext').textContent=TOUR.i===TSTEPS.length-1?t.start:t.next;
+  $('#tPrev').hidden=TOUR.i===0;$('#tNext').hidden=!!S0.act;$('#tSkip').hidden=TOUR.i===TSTEPS.length-1;
+  const tw=tip.offsetWidth,th=tip.offsetHeight;let left=Math.min(Math.max(12,R.l+R.w/2-tw/2),W-tw-12),top;
+  if(!r)top=H/2-th/2;else if(R.t+R.h/2<H/2)top=Math.min(R.t+R.h+14,H-th-12);else top=Math.max(12,R.t-th-14);
+  tip.style.left=left+'px';tip.style.top=top+'px'}
+function tourGo(i){TOUR.i=Math.max(0,Math.min(TSTEPS.length-1,i));TOUR.mode='';$('#tour').hidden=false;tourDraw();
+  if(TSTEPS[TOUR.i].act&&(busy||!seedsEl.querySelector('.seed:not(.leave)'))){$('#tour').hidden=true;tourWaitIdle(()=>tourGo(TOUR.i))}}
+function tourWaitIdle(fn){clearInterval(TOUR.timer);TOUR.timer=setInterval(()=>{if(!busy&&$('#overlay').hidden&&$('#trip').hidden&&seedsEl.querySelector('.seed:not(.leave):not(.falling)')){clearInterval(TOUR.timer);fn()}},200)}
+function tourStart(){if(view!=='play')setTab('play');$('#sheet').hidden=true;TOUR.on=true;tourGo(0)}
+function tourEnd(){TOUR.on=false;clearInterval(TOUR.timer);$('#tour').hidden=true}
+$('#helpBtn').onclick=tourStart;
+$('#tNext').onclick=()=>{if(TOUR.i>=TSTEPS.length-1)tourEnd();else tourGo(TOUR.i+1)};
+$('#tPrev').onclick=()=>tourGo(TOUR.i-1);
+$('#tSkip').onclick=tourEnd;
+addEventListener('resize',()=>{if(TOUR.on&&!$('#tour').hidden)tourDraw()});
+function tourCorrect(){if(!TOUR.on||!TSTEPS[TOUR.i].act)return;$('#tour').hidden=true;const next=TOUR.i+1;
+  clearInterval(TOUR.timer);TOUR.timer=setInterval(()=>{if(!busy&&$('#overlay').hidden&&$('#trip').hidden){clearInterval(TOUR.timer);setTimeout(()=>{if(TOUR.on)tourGo(next)},300)}},200)}
+function tourWrong(){if(!TOUR.on||!TSTEPS[TOUR.i].act)return;TOUR.mode='wrong';setTimeout(tourDraw,60)}
 
 /* ---------- boot ---------- */
 applyLang();renderEgg();
