@@ -11,6 +11,6 @@
 
 ## 다른 게임
 
-- [시간 폴짝 (Time Hop)](time-hop/): 경과 시간 계산을 배우는 개구리 점프 게임 (한국어 / English)
+- [시간 폴짝 (Time Hop)](time-hop/): 경과 시간 계산을 배우는 개구리 점프 게임 (게임 안에서 한국어 / English 전환)
 
 Copyright by [@uk_londonmum_edulife](https://www.instagram.com/uk_londonmum_edulife/)
