@@ -187,6 +187,71 @@ html{height:100%;box-sizing:border-box}
   #qArea>.keys{grid-column:2;grid-row:1/-1}
   .sayrow{align-self:start}
 }
+/* Phone portrait: one screen, clock beside the question, keypad in two rows */
+@media (max-width:639px) and (min-height:480px){
+  body{height:100%;overflow:auto;padding-block:8px;font-size:15px}
+  .wrap{height:100%;gap:8px}
+  header{gap:6px}
+  .brand{font-size:20px;gap:6px}
+  .brand svg{width:26px;height:26px}
+  .seg{padding:2px}
+  .seg button{padding:4px 10px;font-size:13px}
+  #lvGroup{order:5;flex-basis:100%}
+  #lvGroup button{flex:1}
+  .chip{padding:3px 9px;font-size:14px}
+  .chip svg{width:16px;height:16px}
+  .iconbtn{width:32px;height:32px}
+  .iconbtn svg{width:17px;height:17px}
+  .story{flex:none;padding:10px 12px 4px;gap:4px;border-radius:16px}
+  .story p{font-size:14.5px}
+  .story .ask{display:none}
+  .t{padding:0 5px;border-radius:7px}
+  .tl{padding-top:4px}
+  .node{min-width:40px}
+  .node b{font-size:12px}
+  .node .dot{width:30px;height:11px}
+  .hop{min-width:30px;margin:0 -14px;padding-bottom:25px}
+  .hop::after{bottom:21px;height:7px}
+  .arc{height:20px}
+  .hoplab{font-size:12px;padding:0 6px}
+  .frog{width:40px;height:33px}
+  .total{font-size:13px}
+  .play{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);grid-template-rows:auto auto auto minmax(0,1fr) auto auto;gap:8px 10px;align-items:start;background:var(--surface);border-radius:16px;box-shadow:var(--shadow);padding:10px}
+  .play>.panel{display:contents}
+  #qArea{display:contents}
+  .stage{grid-column:1;grid-row:1/5;align-self:stretch;background:none;box-shadow:none;border-radius:0;padding:0;min-height:0;gap:4px}
+  #clockBox{flex:1;min-height:0;gap:2px!important}
+  #clock{flex:1;min-height:0;max-width:none;width:100%;height:100%}
+  .digi{font-size:13px}
+  .count{font-size:17px;min-height:28px;padding:0 10px}
+  #tray{gap:6px}
+  .tlab{font-size:12px}
+  .plus{font-size:18px}
+  .grid,.hourgrp{gap:2px}
+  .blk{border-width:1.5px;border-radius:3px}
+  .hourlab{font-size:12px}
+  .pill{font-size:12px;padding:3px 8px}
+  .legend{font-size:11px}
+  .stepline{grid-column:2;grid-row:1;gap:6px}
+  .stepno{font-size:11px}
+  .dots i{width:9px;height:9px}
+  .q{grid-column:2;grid-row:2;font-size:16px}
+  .ans{grid-column:2;grid-row:3;font-size:16px;gap:6px}
+  .box{min-width:58px;height:42px;font-size:24px;border-radius:10px}
+  .sayrow{grid-column:2;grid-row:4;gap:6px;align-self:start}
+  .ava{width:34px;height:29px}
+  .say{font-size:13.5px;padding:7px 10px;min-height:0}
+  .keys{grid-column:1/-1;grid-row:5;grid-template-columns:repeat(6,1fr);gap:6px}
+  .keys button{height:clamp(40px,6.5vh,52px);font-size:22px;border-radius:12px}
+  .keys .go{font-size:15px}
+  .row2{grid-column:1/-1;grid-row:6;justify-content:center}
+  .ghost{padding:5px 12px;font-size:13px}
+  #winArea{grid-column:2;grid-row:1/5;gap:8px}
+  .win h2{font-size:24px}
+  .win p{font-size:15px}
+  .bigstars svg{width:32px;height:32px}
+  .big{font-size:17px;padding:10px 16px}
+}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 </style>
@@ -510,7 +575,7 @@ function spot(i, f){
   const a = padXY(i); if(!f) return a;
   const b = padXY(i+1); return [a[0] + (b[0]-a[0])*f, a[1] + (b[1]-a[1])*f];
 }
-function drawFrog(x, y){ frogXY = [x,y]; $('#frog').style.transform = `translate(${x-28}px, ${y-41}px)`; }
+function drawFrog(x, y){ frogXY = [x,y]; const fr = $('#frog'); fr.style.transform = `translate(${x - fr.offsetWidth/2}px, ${y - fr.offsetHeight*.89}px)`; }
 function placeFrog(i, f=0){ frogI = i; frogF = f; const [x,y] = spot(i,f); drawFrog(x,y); }
 function frogMood(cls){ const fr = $('#frog'); fr.classList.remove('oops','party'); if(cls){ void fr.offsetWidth; fr.classList.add(cls); } }
 const plop = () => tone(300, .08, 'sine', .08);
