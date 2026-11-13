@@ -1,0 +1,733 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Time Hop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@600;700;800&display=swap">
+<style>
+/* Layout: story card + hop timeline on top; the clock (or minute squares) sits beside the question and a big keypad. Coral = minutes, blue = hours. */
+:root{
+  --bg:#E9F1F5; --surface:#FFFFFF; --ink:#14324A; --muted:#56708A; --line:#D0DEE8;
+  --min:#EC5B34; --min-soft:#FDE2D8; --hr:#2F62E0; --hr-soft:#DAE4FC;
+  --sun:#F5B400; --good:#1F9459; --good-soft:#D5F2E2; --bad:#C2410C; --bad-soft:#FDE8DC;
+  --face:#FFFDF7; --frog:#3E9E4A; --belly:#B5E07F; --pad:#5DB85A; --water:#BFE2F2; --shadow:0 2px 0 rgba(20,50,74,.08), 0 10px 30px -18px rgba(20,50,74,.35);
+  --display:"Fredoka","Nunito",ui-rounded,system-ui,sans-serif;
+  --body:"Nunito",ui-rounded,system-ui,-apple-system,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E1A24; --surface:#162634; --ink:#E7EFF5; --muted:#94AABB; --line:#2A3F51;
+  --min:#FF7A55; --min-soft:#4A2A22; --hr:#6E98FF; --hr-soft:#22325A;
+  --sun:#FFCB3D; --good:#4CCB8A; --good-soft:#173A2A; --bad:#FF9466; --bad-soft:#40261C;
+  --face:#1C3042; --frog:#4DB85A; --belly:#A6D872; --pad:#3D8E48; --water:#1F4560; --shadow:0 2px 0 rgba(0,0,0,.3), 0 10px 30px -18px rgba(0,0,0,.8); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E1A24; --surface:#162634; --ink:#E7EFF5; --muted:#94AABB; --line:#2A3F51;
+  --min:#FF7A55; --min-soft:#4A2A22; --hr:#6E98FF; --hr-soft:#22325A;
+  --sun:#FFCB3D; --good:#4CCB8A; --good-soft:#173A2A; --bad:#FF9466; --bad-soft:#40261C;
+  --face:#1C3042; --frog:#4DB85A; --belly:#A6D872; --pad:#3D8E48; --water:#1F4560; --shadow:0 2px 0 rgba(0,0,0,.3), 0 10px 30px -18px rgba(0,0,0,.8); color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px 32px}
+.wrap{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid var(--hr);outline-offset:2px}
+.mins{color:var(--min)} .hrs{color:var(--hr)}
+
+/* header */
+header{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:8px;font-family:var(--display);font-weight:700;font-size:28px;letter-spacing:-.01em;margin-right:auto}
+.brand svg{width:34px;height:34px}
+.seg{display:flex;background:var(--surface);border:2px solid var(--line);border-radius:999px;padding:3px}
+.seg button{border:0;background:none;padding:6px 14px;border-radius:999px;font-family:var(--display);font-weight:600;font-size:15px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.chip{display:flex;align-items:center;gap:6px;background:var(--surface);border:2px solid var(--line);border-radius:999px;padding:6px 12px;font-family:var(--display);font-weight:600}
+.chip svg{width:20px;height:20px}
+.iconbtn{background:var(--surface);border:2px solid var(--line);border-radius:999px;width:40px;height:40px;display:grid;place-items:center;padding:0}
+.iconbtn svg{width:20px;height:20px}
+
+/* story */
+.story{background:var(--surface);border-radius:22px;box-shadow:var(--shadow);padding:18px 20px 16px;display:flex;flex-direction:column;gap:14px}
+.story p{margin:0;font-size:20px;font-weight:700;text-wrap:balance}
+.story .ask{font-family:var(--display);font-weight:600;font-size:24px}
+.t{font-family:var(--display);font-weight:600;background:var(--bg);border-radius:10px;padding:1px 8px;white-space:nowrap}
+
+/* hop timeline */
+.pond{position:relative}
+.tl{display:flex;align-items:flex-end;padding-top:14px;overflow:hidden}
+.frog{position:absolute;left:0;top:0;width:56px;height:46px;z-index:3;pointer-events:none;will-change:transform}
+.frog svg{width:100%;height:100%;display:block;transform-origin:50% 100%;transition:transform .12s}
+.frog.crouch svg{transform:scale(1.15,.8)}
+.frog.air svg{transform:scale(.88,1.14)}
+.frog.oops svg{animation:nope .5s}
+.frog.party svg{animation:party .7s ease-in-out infinite}
+@keyframes nope{20%{transform:rotate(-12deg)}50%{transform:rotate(12deg)}80%{transform:rotate(-6deg)}}
+@keyframes party{0%,100%{transform:translateY(0) scale(1,1)}10%{transform:scale(1.12,.86)}45%{transform:translateY(-22px) scale(.92,1.1)}}
+.eyes{animation:blink 4.5s infinite;transform-origin:50% 15px;transform-box:view-box}
+@keyframes blink{0%,94%,100%{transform:scaleY(1)}97%{transform:scaleY(.1)}}
+.node{display:flex;flex-direction:column;align-items:center;gap:4px;flex:none;width:52px;position:relative;z-index:1}
+.node .dot{width:38px;height:14px;border-radius:50%;background:var(--pad);box-shadow:inset 0 -3px 0 rgba(0,0,0,.14);position:relative}
+.node .dot::after{content:"";position:absolute;right:4px;top:3px;width:9px;height:5px;background:var(--water);clip-path:polygon(0 50%,100% 0,100% 100%)}
+.node b{font-family:var(--display);font-weight:600;font-size:16px;font-variant-numeric:tabular-nums}
+.hop{flex:1 1 0;min-width:46px;margin:0 -18px;display:flex;flex-direction:column;align-items:center;padding-bottom:30px;position:relative}
+.hop::after{content:"";position:absolute;left:10px;right:10px;bottom:29px;height:9px;border-radius:9px;background:var(--water)}
+.arc{display:block;width:100%;height:30px;border:3px dashed var(--line);border-bottom:0;border-radius:50% 50% 0 0/100% 100% 0 0}
+.hoplab{font-family:var(--display);font-weight:600;font-size:15px;padding:1px 9px;border-radius:999px;background:var(--bg);color:var(--muted);margin-bottom:3px;white-space:nowrap}
+.hop.active .arc{border-color:var(--ink);animation:bob 1.2s ease-in-out infinite}
+.hop.active .hoplab{background:var(--ink);color:var(--surface)}
+.hop.done.m .arc{border:4px solid var(--min);border-bottom:0}
+.hop.done.h .arc{border:4px solid var(--hr);border-bottom:0}
+.hop.done.m .hoplab{background:var(--min-soft);color:var(--min)}
+.hop.done.h .hoplab{background:var(--hr-soft);color:var(--hr)}
+@keyframes bob{50%{transform:translateY(-3px)}}
+.total{font-family:var(--display);font-weight:600;font-size:18px;color:var(--good);min-height:0}
+.total:empty{display:none}
+
+/* play area */
+.play{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:14px;align-items:start}
+@media (max-width:639px){.play{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--surface);border-radius:22px;box-shadow:var(--shadow);padding:16px}
+.stage{display:flex;flex-direction:column;align-items:center;gap:10px;min-height:340px;justify-content:center}
+#clock{width:100%;max-width:300px;height:auto;display:block}
+.digi{font-family:var(--display);font-weight:600;font-size:22px;font-variant-numeric:tabular-nums;color:var(--muted)}
+.count{font-family:var(--display);font-weight:700;font-size:30px;min-height:42px;padding:0 16px;border-radius:999px;display:flex;align-items:center;transition:transform .15s}
+.count.m{background:var(--min-soft);color:var(--min)} .count.h{background:var(--hr-soft);color:var(--hr)} .count.g{background:var(--good-soft);color:var(--good)}
+.count.pop{transform:scale(1.12)}
+
+/* minute squares */
+#tray{width:100%;display:flex;flex-direction:column;gap:12px}
+.trow{display:flex;flex-direction:column;gap:6px}
+.tlab{font-family:var(--display);font-weight:600;font-size:17px}
+.plus{font-family:var(--display);font-weight:700;font-size:28px;text-align:center;color:var(--muted);line-height:1}
+.grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:4px}
+.blk{display:block;aspect-ratio:1;border-radius:6px;border:2px solid var(--min);background:var(--min-soft);transition:background .2s,border-color .3s,border-radius .3s,transform .2s}
+.blk.lit{background:var(--min);transform:scale(1.08)}
+.blk.one{border-radius:50%;width:55%;justify-self:center;align-self:center}
+.legend{display:flex;align-items:center;gap:6px;font-weight:700;font-size:14px;color:var(--muted)}
+.legend .blk{width:16px;flex:none}
+.legend .blk.one{width:10px;margin-left:10px}
+.hourgrp{grid-column:1/-1;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:4px;position:relative;border-radius:10px;transition:gap .5s}
+.hourgrp.merged{gap:0}
+.hourgrp.merged .blk{background:var(--hr);border-color:var(--hr);border-radius:0;transform:none}
+.hourgrp.merged .blk:first-child{border-radius:10px 0 0 10px}
+.hourgrp.merged .blk:last-child{border-radius:0 10px 10px 0}
+.hourlab{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--display);font-weight:700;color:#fff;opacity:0;transition:opacity .4s .3s;pointer-events:none}
+.hourgrp.merged .hourlab{opacity:1}
+.pills{display:flex;flex-wrap:wrap;gap:6px}
+.pill{font-family:var(--display);font-weight:600;padding:6px 14px;border-radius:10px;border:2px solid var(--hr);background:var(--hr-soft);color:var(--hr);transition:background .2s,color .2s,transform .2s}
+.pill.lit{background:var(--hr);color:#fff;transform:scale(1.06)}
+.none{color:var(--muted);font-weight:700}
+
+/* question panel */
+.panel{display:flex;flex-direction:column;gap:12px}
+.stepline{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.stepno{font-family:var(--display);font-weight:600;font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.dots{display:flex;gap:5px}
+.dots i{width:12px;height:12px;border-radius:50%;background:var(--line)}
+.dots i.done{background:var(--good)} .dots i.now{background:var(--ink)}
+.q{font-family:var(--display);font-weight:600;font-size:23px;line-height:1.3;margin:0;text-wrap:balance}
+.ans{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-family:var(--display);font-weight:600;font-size:22px}
+.box{min-width:84px;height:62px;border-radius:14px;border:3px solid var(--line);background:var(--bg);font-family:var(--display);font-weight:700;font-size:34px;font-variant-numeric:tabular-nums;padding:0 10px}
+.box.on{border-color:var(--ink);background:var(--surface)}
+.box.ok{border-color:var(--good);background:var(--good-soft);color:var(--good)}
+.box.no{border-color:var(--bad);background:var(--bad-soft);color:var(--bad);animation:shake .4s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.sayrow{display:flex;gap:10px;align-items:flex-end}
+.ava{flex:none;width:52px;height:44px}
+.ava svg{width:100%;height:100%}
+.say{flex:1;min-width:0;min-height:52px;border-radius:16px 16px 16px 4px;padding:10px 14px;background:var(--bg);font-weight:700;font-size:17px}
+.say.good{background:var(--good-soft);color:var(--good)} .say.bad{background:var(--bad-soft);color:var(--bad)}
+.keys{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.keys button{height:58px;border-radius:14px;border:2px solid var(--line);background:var(--surface);font-family:var(--display);font-weight:600;font-size:26px;box-shadow:0 3px 0 var(--line);transition:transform .05s}
+.keys button:active{transform:translateY(2px);box-shadow:0 1px 0 var(--line)}
+.keys .go{background:var(--good);border-color:var(--good);color:#fff;font-size:20px;box-shadow:0 3px 0 color-mix(in srgb,var(--good) 60%,#000)}
+.keys button:disabled{opacity:.45;cursor:default}
+.row2{display:flex;gap:8px;flex-wrap:wrap}
+.ghost{border:2px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 16px;font-family:var(--display);font-weight:600;font-size:16px}
+.ghost:disabled{opacity:.45;cursor:default}
+.big{background:var(--ink);color:var(--surface);border:0;border-radius:16px;padding:14px 22px;font-family:var(--display);font-weight:600;font-size:22px}
+
+.win{display:flex;flex-direction:column;gap:14px;align-items:flex-start}
+.win h2{font-family:var(--display);font-weight:700;font-size:34px;margin:0;line-height:1.1}
+.win p{margin:0;font-size:20px;font-weight:700}
+.bigstars{display:flex;gap:6px}
+.bigstars svg{width:46px;height:46px}
+.mute{fill:var(--line)} .gold{fill:var(--sun)}
+/* Tablet: the whole game fits one screen, no scrolling */
+html{height:100%;box-sizing:border-box}
+@media (min-width:640px) and (min-height:540px){
+  body{height:100%;padding-block:10px;overflow:hidden}
+  .wrap{height:100%;max-width:1280px;gap:10px}
+  .story{flex:none;padding:12px 18px;gap:6px}
+  .story p{font-size:clamp(16px,2.3vh,20px)}
+  .story .ask{font-size:clamp(18px,2.7vh,24px)}
+  .play{flex:1;min-height:0;align-items:stretch;gap:10px}
+  .play>.card{min-height:0;overflow:auto}
+  .stage{min-height:0;justify-content:center}
+  #clockBox{flex:1;min-height:0}
+  #clock{flex:1;min-height:0;max-width:none;height:100%;width:100%}
+  #qArea{height:100%;gap:10px}
+  .keys{flex:1;min-height:0;grid-auto-rows:minmax(40px,1fr)}
+  .keys button{height:auto}
+  .q{font-size:clamp(19px,2.8vh,23px)}
+  .box{height:clamp(48px,7vh,62px);font-size:clamp(28px,4.4vh,34px)}
+}
+/* Tablet landscape: keypad gets its own column */
+@media (min-width:900px) and (min-height:540px) and (min-aspect-ratio:5/4){
+  .play{grid-template-columns:minmax(0,.95fr) minmax(0,2fr)}
+  #qArea{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);grid-template-rows:auto auto auto 1fr auto;column-gap:18px;row-gap:10px}
+  #qArea>*{grid-column:1}
+  #qArea>.keys{grid-column:2;grid-row:1/-1}
+  .sayrow{align-self:start}
+}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="17" fill="var(--face)" stroke="var(--ink)" stroke-width="3"/><path d="M20 20V9" stroke="var(--min)" stroke-width="3.5" stroke-linecap="round"/><path d="M20 20l7 4" stroke="var(--hr)" stroke-width="3.5" stroke-linecap="round"/><circle cx="20" cy="20" r="2.5" fill="var(--ink)"/></svg>
+      Time Hop
+    </div>
+    <div class="seg" role="group" aria-label="Level">
+      <button id="lvEasy" aria-pressed="true">Easy</button>
+      <button id="lvHard" aria-pressed="false">Tricky</button>
+      <button id="lvVery" aria-pressed="false">Very Tricky</button>
+    </div>
+    <a class="chip" href="index.html" style="text-decoration:none;color:inherit;font-family:var(--display)">한국어</a>
+    <div class="chip" aria-label="Stars"><svg viewBox="0 0 24 24"><path class="gold" d="M12 2l3 6.6 7.2.8-5.4 4.9 1.5 7.1L12 17.8 5.7 21.4l1.5-7.1L1.8 9.4 9 8.6z"/></svg><span id="stars">0</span></div>
+    <button class="iconbtn" id="snd" aria-label="Sound on" title="Sound"></button>
+  </header>
+
+  <section class="story" aria-live="polite">
+    <p id="storyTxt"></p>
+    <p class="ask">How much time went by? Help Pip the frog hop there!</p>
+    <div class="pond" id="pond"><div class="tl" id="tl"></div><div class="frog" id="frog" aria-hidden="true"></div></div>
+    <div class="total" id="total"></div>
+  </section>
+
+  <div class="play">
+    <div class="card stage">
+      <div id="clockBox" style="display:flex;flex-direction:column;align-items:center;gap:6px;width:100%">
+        <svg id="clock" viewBox="0 0 260 260" role="img" aria-label="Clock"></svg>
+        <div class="digi" id="digi"></div>
+      </div>
+      <div id="tray" hidden></div>
+      <div class="count" id="count"></div>
+    </div>
+
+    <div class="card panel" id="panel">
+      <div id="qArea" class="panel">
+        <div class="stepline"><span class="stepno" id="stepno"></span><span class="dots" id="dots"></span></div>
+        <p class="q" id="q"></p>
+        <div class="ans" id="ans"></div>
+        <div class="sayrow"><span class="ava" id="ava" aria-hidden="true"></span><div class="say" id="say"></div></div>
+        <div class="keys" id="keys"></div>
+        <div class="row2">
+          <button class="ghost" id="showMe">Show me how</button>
+          <button class="ghost" id="newP">New problem</button>
+        </div>
+      </div>
+      <div id="winArea" class="win" hidden></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+const $ = s => document.querySelector(s);
+const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const NAMES = ['Mia','Leo','Sora','Ben','Ava','Jun','Zoe','Max','Ella','Noah'];
+const ACTS = [
+  ['started playing at the park','went home','played at the park'],
+  ['started baking cookies','finished','baked cookies'],
+  ['started reading books','stopped reading','read books'],
+  ['started watching a movie','turned off the TV','watched a movie'],
+  ['started drawing pictures','put the crayons away','drew pictures'],
+  ['started building a block castle','finished the castle','built a block castle'],
+  ['started playing soccer','stopped playing','played soccer'],
+  ['got in the car to visit Grandma','arrived at Grandma’s house','rode in the car'],
+  ['started swimming at the pool','got out of the pool','swam'],
+];
+let level = 'easy', stars = 0, sound = true;
+let P, steps, si, mistakes, entry, field, busy = false, tok = 0, clockT = 0, sectorFrom = null, sectorKind = 'm';
+const CANCEL = {};
+
+const rand = (a,b) => a + Math.floor(Math.random()*(b-a+1));
+const pick = a => a[Math.floor(Math.random()*a.length)];
+const fmt = t => `${Math.floor(t/60)}:${String(Math.round(t%60)).padStart(2,'0')}`;
+const pl = (n,w) => `${n} ${w}${n===1?'':'s'}`;
+const pos = m => m === 0 ? 12 : m/5;           // number the long hand points at
+const posTxt = m => Number.isInteger(pos(m)) ? `on the ${pos(m)}` : `between the ${Math.floor(pos(m))} and the ${Math.floor(pos(m))+1}`;
+const goTxt = m => Number.isInteger(pos(m)) ? `to the ${pos(m)}` : `to the little mark between the ${Math.floor(pos(m))} and the ${Math.floor(pos(m))+1}`;
+const durTxt = (h,m) => h && m ? `${pl(h,'hour')} ${pl(m,'minute')}` : h ? pl(h,'hour') : pl(m,'minute');
+
+/* ---------- sound ---------- */
+let ac;
+function tone(f, d=.12, type='sine', v=.12){
+  if(!sound) return;
+  try{
+    ac = ac || new (window.AudioContext||window.webkitAudioContext)();
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = type; o.frequency.value = f; o.connect(g); g.connect(ac.destination);
+    const t = ac.currentTime; g.gain.setValueAtTime(v,t); g.gain.exponentialRampToValueAtTime(.001,t+d);
+    o.start(t); o.stop(t+d);
+  }catch(e){}
+}
+const tick = n => tone(440 + n*28, .1, 'triangle');
+const yay = () => { tone(660,.12); setTimeout(()=>tone(880,.18),110); };
+const oops = () => tone(220,.22,'sine',.1);
+function drawSnd(){
+  $('#snd').innerHTML = sound
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>'
+    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M17 9l5 6M22 9l-5 6"/></svg>';
+  $('#snd').setAttribute('aria-label', sound ? 'Sound on' : 'Sound off');
+}
+
+/* ---------- clock ---------- */
+const C = 130, NS = 'http://www.w3.org/2000/svg';
+const pt = (deg, r) => [C + r*Math.sin(deg*Math.PI/180), C - r*Math.cos(deg*Math.PI/180)];
+function buildClock(){
+  let s = `<circle cx="${C}" cy="${C}" r="106" fill="var(--face)" stroke="var(--ink)" stroke-width="5"/>`;
+  s += `<path id="sector" fill="var(--min)" fill-opacity=".22" d=""/><circle id="sectorFull" cx="${C}" cy="${C}" r="103" fill="var(--min)" fill-opacity=".22" visibility="hidden"/>`;
+  for(let i=0;i<60;i++){
+    const big = i%5===0, [x1,y1]=pt(i*6, big?92:97), [x2,y2]=pt(i*6,102);
+    s += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="var(--ink)" stroke-width="${big?3:1.4}" stroke-linecap="round" opacity="${big?1:.55}"/>`;
+  }
+  for(let h=1;h<=12;h++){
+    const [x,y]=pt(h*30,74);
+    s += `<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central" font-family="Fredoka,Nunito,sans-serif" font-weight="600" font-size="23" fill="var(--ink)">${h}</text>`;
+    const [mx,my]=pt(h*30,119);
+    s += `<text x="${mx}" y="${my}" text-anchor="middle" dominant-baseline="central" font-family="Fredoka,Nunito,sans-serif" font-weight="600" font-size="11" fill="var(--min)">${h===12?'00':h*5}</text>`;
+  }
+  s += `<line id="hHand" x1="${C}" y1="${C+8}" x2="${C}" y2="${C-52}" stroke="var(--hr)" stroke-width="9" stroke-linecap="round"/>`;
+  s += `<line id="mHand" x1="${C}" y1="${C+10}" x2="${C}" y2="${C-86}" stroke="var(--min)" stroke-width="6" stroke-linecap="round"/>`;
+  s += `<circle cx="${C}" cy="${C}" r="7" fill="var(--ink)"/>`;
+  $('#clock').innerHTML = s;
+}
+function drawClock(t){
+  clockT = t;
+  const m = t%60, h = (t/60)%12;
+  $('#mHand').setAttribute('transform', `rotate(${m*6} ${C} ${C})`);
+  $('#hHand').setAttribute('transform', `rotate(${h*30} ${C} ${C})`);
+  const sec = $('#sector'), full = $('#sectorFull');
+  const col = sectorKind === 'h' ? 'var(--hr)' : 'var(--min)';
+  sec.setAttribute('fill', col); full.setAttribute('fill', col);
+  const d = sectorFrom == null ? 0 : t - sectorFrom;
+  if(d <= 0){ sec.setAttribute('d',''); full.setAttribute('visibility','hidden'); }
+  else if(d >= 60){ sec.setAttribute('d',''); full.setAttribute('visibility','visible'); }
+  else{
+    full.setAttribute('visibility','hidden');
+    const a0 = (sectorFrom%60)*6, a1 = a0 + d*6, [x0,y0]=pt(a0,103), [x1,y1]=pt(a1,103);
+    sec.setAttribute('d', `M${C} ${C}L${x0} ${y0}A103 103 0 ${d>30?1:0} 1 ${x1} ${y1}Z`);
+  }
+  $('#digi').textContent = `${fmt(Math.floor(t))} ${P.ampm}`;
+}
+function tween(a, b, ms, myTok){
+  if(RM) ms = Math.min(ms, 120);
+  return new Promise((res, rej) => {
+    const t0 = performance.now();
+    const f = now => {
+      if(myTok !== tok) return rej(CANCEL);
+      const k = Math.min(1, (now - t0)/ms), e = k<.5 ? 2*k*k : 1 - Math.pow(-2*k+2,2)/2;
+      drawClock(a + (b-a)*e);
+      k < 1 ? requestAnimationFrame(f) : res();
+    };
+    requestAnimationFrame(f);
+  });
+}
+const wait = (ms, myTok) => new Promise((res, rej) => setTimeout(() => myTok === tok ? res() : rej(CANCEL), ms));
+
+/* ---------- Pip the frog ---------- */
+const FROG = `<svg viewBox="0 0 60 50"><ellipse cx="12" cy="46" rx="8" ry="3.4" fill="var(--frog)"/><ellipse cx="48" cy="46" rx="8" ry="3.4" fill="var(--frog)"/>
+<ellipse cx="30" cy="33" rx="24" ry="14" fill="var(--frog)"/><ellipse cx="30" cy="37" rx="14" ry="8.5" fill="var(--belly)"/>
+<circle cx="18" cy="16" r="9.5" fill="var(--frog)"/><circle cx="42" cy="16" r="9.5" fill="var(--frog)"/>
+<g class="eyes"><circle cx="18" cy="15" r="6.3" fill="#fff"/><circle cx="42" cy="15" r="6.3" fill="#fff"/><circle cx="19.6" cy="15.6" r="3.2" fill="#14324A"/><circle cx="43.6" cy="15.6" r="3.2" fill="#14324A"/><circle cx="20.6" cy="14.2" r="1.1" fill="#fff"/><circle cx="44.6" cy="14.2" r="1.1" fill="#fff"/></g>
+<path d="M22 28.5Q30 35 38 28.5" stroke="#14324A" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+<ellipse cx="13.5" cy="28" rx="3.6" ry="2.2" fill="#FF8FA3" opacity=".85"/><ellipse cx="46.5" cy="28" rx="3.6" ry="2.2" fill="#FF8FA3" opacity=".85"/></svg>`;
+let frogI = 0, frogF = 0, frogXY = [0,0];
+function padXY(i){
+  const pads = document.querySelectorAll('#tl .dot'), pr = $('#pond').getBoundingClientRect();
+  const r = pads[Math.min(i, pads.length-1)].getBoundingClientRect();
+  return [r.left + r.width/2 - pr.left, r.top + r.height/2 - pr.top];
+}
+function spot(i, f){
+  const a = padXY(i); if(!f) return a;
+  const b = padXY(i+1); return [a[0] + (b[0]-a[0])*f, a[1] + (b[1]-a[1])*f];
+}
+function drawFrog(x, y){ frogXY = [x,y]; $('#frog').style.transform = `translate(${x-28}px, ${y-41}px)`; }
+function placeFrog(i, f=0){ frogI = i; frogF = f; const [x,y] = spot(i,f); drawFrog(x,y); }
+function frogMood(cls){ const fr = $('#frog'); fr.classList.remove('oops','party'); if(cls){ void fr.offsetWidth; fr.classList.add(cls); } }
+const plop = () => tone(300, .08, 'sine', .08);
+function hop(i, f, height, ms, my){
+  if(RM) ms = Math.min(ms, 150);
+  const [x0,y0] = frogXY, fr = $('#frog');
+  return new Promise((res, rej) => {
+    fr.classList.add('crouch');
+    setTimeout(() => {
+      if(my !== tok){ fr.classList.remove('crouch'); return rej(CANCEL); }
+      fr.classList.remove('crouch'); fr.classList.add('air');
+      const t0 = performance.now();
+      const step = now => {
+        if(my !== tok){ fr.classList.remove('air'); return rej(CANCEL); }
+        const k = Math.min(1, (now-t0)/ms), [x1,y1] = spot(i,f);
+        drawFrog(x0 + (x1-x0)*k, y0 + (y1-y0)*k - 4*height*k*(1-k));
+        if(k < 1) return requestAnimationFrame(step);
+        fr.classList.remove('air');
+        if(f >= 1){ i++; f = 0; }
+        frogI = i; frogF = f; plop(); res();
+      };
+      requestAnimationFrame(step);
+    }, RM ? 0 : 110);
+  });
+}
+const clockIdx = st => steps.filter(s => s.kind === 'clock').indexOf(st);
+addEventListener('resize', () => placeFrog(frogI, frogF));
+
+/* ---------- counter + narration ---------- */
+function count(txt, kind){
+  const c = $('#count');
+  c.textContent = txt; c.className = 'count ' + (txt ? kind : '');
+  if(txt && !RM){ c.classList.add('pop'); setTimeout(()=>c.classList.remove('pop'),140); }
+}
+function say(html, kind=''){ const s = $('#say'); s.innerHTML = html; s.className = 'say ' + kind; }
+
+/* ---------- problem ---------- */
+const LEVELS = {
+  easy:  {stepM:10, gaps:[1,2,2,3,3]},
+  hard:  {stepM:5,  gaps:[1,2,3,3,4]},
+  vhard: {stepM:1,  gaps:[1,2,3,3,4]},
+};
+function makeProblem(fix){
+  const L = LEVELS[level], stepM = L.stepM;
+  const gap = fix ? fix.gap : pick(L.gaps);
+  let sm, em;
+  do { sm = stepM * rand(1, 60/stepM - 1); em = stepM * rand(1, 60/stepM - 1); }
+  while(level === 'vhard' && sm % 5 === 0 && em % 5 === 0);   // very tricky: at least one odd minute
+  if(fix){ sm = fix.sm; em = fix.em; }
+  // Morning: start 7 AM or later, end before noon. Afternoon/evening: end before 10 PM.
+  const am = fix ? fix.ampm === 'AM' : 11 - gap >= 7 && Math.random() < .3;
+  const sh = fix ? fix.sh : am ? rand(7, 11 - gap) : rand(1, 9 - gap), eh = sh + gap;
+  const ampm = am ? 'AM' : 'PM';
+  const a = 60 - sm, H = gap - 1, b = em, M = a + b;
+  const tH = H + (M >= 60 ? 1 : 0), tM = M % 60;
+  P = {sh, sm, eh, em, ampm, a, H, b, M, tH, tM, start: sh*60+sm, end: eh*60+em, name: pick(NAMES), act: pick(ACTS)};
+  const odd = level === 'vhard';
+  const minWord = n => pl(n, 'minute');
+
+  steps = [];
+  steps.push({kind:'clock', from:P.start, to:(sh+1)*60, ans:[a], lay:'{0} minutes',
+    q:`How many minutes from <span class="t">${fmt(P.start)}</span> to <span class="t">${sh+1}:00</span>?`,
+    tip: odd ? `Hop to the next o’clock first. Count by 1s to a big mark, then by 5s to the 12.`
+             : `Hop to the next o’clock first. The long hand needs to get to the 12.`});
+  if(H > 0) steps.push({kind:'clock', hours:true, from:(sh+1)*60, to:eh*60, ans:[H], lay:'{0} '+(H===1?'hour':'hours'),
+    q:`How many hours from <span class="t">${sh+1}:00</span> to <span class="t">${eh}:00</span>?`,
+    tip:`Look at the short hand. Each number it moves is 1 hour.`});
+  steps.push({kind:'clock', from:eh*60, to:P.end, ans:[b], lay:'{0} minutes',
+    q:`How many minutes from <span class="t">${eh}:00</span> to <span class="t">${fmt(P.end)}</span>?`,
+    tip: odd ? `At ${eh}:00 the long hand is on the 12. Count by 5s on the big marks, then by 1s on the little marks.`
+             : `At ${eh}:00 the long hand is on the 12. Count by 5s to where it stops.`});
+  steps.push({kind:'add', ans:[M], lay:'{0} minutes',
+    q:`Add the minutes: <span class="mins">${a}</span> + <span class="mins">${b}</span> = ?`,
+    tip: odd ? `Each square is 5 minutes. Each dot is 1 minute.` : `Each square is 5 minutes. You can count them by 5s.`});
+  if(M === 60) steps.push({kind:'convert', ans:[1], lay:'{0} hour',
+    q:`Wow, exactly 60 minutes! How many hours is 60 minutes?`,
+    tip:`One whole row of squares is 60 minutes.`});
+  else if(M > 60) steps.push({kind:'convert', ans:[M-60], lay:'1 hour and {0} minutes',
+    q:`${M} minutes is more than 60 minutes. 60 minutes make 1 hour. So ${M} minutes is…`,
+    tip:`One whole row of squares is 60 minutes, which is 1 hour.`});
+  const parts = [];
+  if(H) parts.push(`<span class="hrs">${pl(H,'hour')}</span>`);
+  if(M === 60) parts.push(`<span class="hrs">1 hour</span>`);
+  else if(M > 60) parts.push(`<span class="hrs">1 hour</span> <span class="mins">${minWord(M-60)}</span>`);
+  else parts.push(`<span class="mins">${minWord(M)}</span>`);
+  steps.push({kind:'final', ans:[tH, tM], lay:'{0} hours {1} minutes',
+    q: parts.length > 1 ? `Put it together: ${parts.join(' + ')} = ?` : `Put it together: ${parts[0]} = ?`,
+    tip: tM ? `Count the blue hours first, then the coral minutes.` : `Count the blue hours. Are there any minutes left?`});
+  si = 0; mistakes = 0; steps.forEach(s => s.done = false);
+}
+
+/* ---------- rendering ---------- */
+function renderStory(){
+  const [a1, a2] = P.act;
+  $('#storyTxt').innerHTML = `${P.name} ${a1} at <span class="t">${fmt(P.start)} ${P.ampm}</span>. ${P.name} ${a2} at <span class="t">${fmt(P.end)} ${P.ampm}</span>.`;
+}
+function renderTimeline(){
+  const nodes = [P.start, (P.sh+1)*60]; if(P.H) nodes.push(P.eh*60); nodes.push(P.end);
+  const cs = steps.filter(s => s.kind === 'clock');
+  let h = '';
+  nodes.forEach((n, i) => {
+    h += `<div class="node"><span class="dot"></span><b>${fmt(n)}</b></div>`;
+    const st = cs[i]; if(!st) return;
+    const state = st.done ? 'done' : steps[si] === st ? 'active' : '';
+    const lab = st.done ? (st.hours ? pl(st.ans[0],'hour').replace('hours','hrs') : `${st.ans[0]} min`) : '?';
+    h += `<div class="hop ${st.hours?'h':'m'} ${state}" style="flex-grow:${Math.max(st.to-st.from,30)}"><span class="hoplab">${lab}</span><span class="arc"></span></div>`;
+  });
+  $('#tl').innerHTML = h;
+}
+const blocks = (n, cls='') => Array.from({length:n}, () => `<i class="blk ${cls}" data-v="5"></i>`).join('');
+const mins = n => blocks(Math.floor(n/5)) + Array.from({length:n%5}, () => '<i class="blk one" data-v="1"></i>').join('');
+const legend = () => level === 'vhard' ? `<div class="legend"><i class="blk"></i> 5 minutes <i class="blk one"></i> 1 minute</div>` : '';
+function renderTray(st){
+  const t = $('#tray');
+  if(st.kind === 'add'){
+    t.innerHTML = `<div class="trow"><span class="tlab mins">${P.a} minutes (${fmt(P.start)} to ${P.sh+1}:00)</span><div class="grid">${mins(P.a)}</div></div>
+      <div class="plus">+</div>
+      <div class="trow"><span class="tlab mins">${P.b} minutes (${P.eh}:00 to ${fmt(P.end)})</span><div class="grid">${mins(P.b)}</div></div>${legend()}`;
+  } else if(st.kind === 'convert'){
+    t.innerHTML = `<div class="trow"><span class="tlab mins">${P.M} minutes</span>
+      <div class="grid"><div class="hourgrp" id="hg">${blocks(12)}<span class="hourlab">1 hour</span></div>${mins(P.M-60)}</div></div>${legend()}`;
+  } else {
+    const hrs = P.tH ? Array.from({length:P.tH}, () => '<span class="pill">1 hour</span>').join('') : '<span class="none">No whole hours</span>';
+    t.innerHTML = `<div class="trow"><span class="tlab hrs">Hours</span><div class="pills">${hrs}</div></div>
+      <div class="trow"><span class="tlab mins">Minutes</span>${P.tM ? `<div class="grid">${mins(P.tM)}</div>` : '<span class="none">No minutes left</span>'}</div>${legend()}`;
+  }
+}
+function renderDots(){
+  $('#dots').innerHTML = steps.map((s,i) => `<i class="${s.done?'done':i===si?'now':''}"></i>`).join('');
+  $('#stepno').textContent = `Step ${si+1} of ${steps.length}`;
+}
+function renderAns(state){
+  const st = steps[si];
+  $('#ans').innerHTML = st.lay.replace(/\{(\d)\}/g, (_, i) =>
+    `<button class="box ${+i===field && !state ? 'on' : ''} ${state||''}" data-i="${i}" aria-label="Answer box ${+i+1}">${entry[i] || ''}</button>`);
+  $('#ans').querySelectorAll('.box').forEach(b => b.onclick = () => { if(busy) return; field = +b.dataset.i; renderAns(); });
+}
+function setBusy(b){
+  busy = b;
+  $('#keys').querySelectorAll('button').forEach(k => k.disabled = b);
+  $('#showMe').disabled = b;
+}
+function renderStep(){
+  const st = steps[si];
+  entry = st.ans.map(() => ''); field = 0;
+  renderDots(); renderTimeline();
+  $('#q').innerHTML = st.q;
+  renderAns();
+  say(st.tip);
+  count('');
+  const isClock = st.kind === 'clock';
+  $('#clockBox').hidden = !isClock; $('#clockBox').style.display = isClock ? 'flex' : 'none';
+  $('#tray').hidden = isClock;
+  frogMood('');
+  placeFrog(isClock ? clockIdx(st) : document.querySelectorAll('#tl .dot').length - 1, 0);
+  if(isClock){ sectorFrom = null; sectorKind = st.hours ? 'h' : 'm'; drawClock(st.from); }
+  else renderTray(st);
+  setBusy(false);
+}
+
+/* ---------- demos (the slow "watch me" part) ---------- */
+// Split a stretch of minutes into hops: 1s up to a big (5-minute) mark, then 5s, then 1s.
+function hopPlan(a, b){
+  const out = []; let t = a;
+  while(t < b && t % 5){ out.push(1); t++; }
+  while(t + 5 <= b){ out.push(5); t += 5; }
+  while(t < b){ out.push(1); t++; }
+  return out;
+}
+async function countBlocks(list, label, my, fast){
+  let c = 0;
+  for(const b of list){
+    b.classList.add('lit'); const v = +b.dataset.v; c += v;
+    count(label(c), 'm'); v === 5 ? tick(c/5) : tone(700 + c*6, .06, 'triangle', .08);
+    await wait(v === 5 ? (fast ? 330 : 420) : 280, my);
+  }
+  return c;
+}
+async function demo(st, my){
+  if(st.kind === 'clock'){
+    sectorKind = st.hours ? 'h' : 'm';
+    sectorFrom = st.from; drawClock(st.from); count('');
+    const n = st.to - st.from, k = clockIdx(st);
+    if(frogI !== k || frogF) await hop(k, 0, 18, 450, my);
+    if(!st.hours){
+      const startM = st.from % 60, plan = hopPlan(st.from, st.to), mixed = plan.includes(1);
+      const how = mixed ? `I’ll count by 5s on the big marks and by 1s on the little marks.` : `I’ll hop 5 minutes at a time.`;
+      say(startM
+        ? `It is ${fmt(st.from)}. The long hand is ${posTxt(startM)}. It needs to get to the 12. ${how} Count with me!`
+        : `It is ${fmt(st.from)}. The long hand is on the 12. It needs to get ${goTxt(st.to%60)}. ${how} Count with me!`);
+      await wait(1800, my);
+      let c = 0, t = st.from;
+      for(const d of plan){
+        if(d === 5) await Promise.all([tween(t, t+5, 520, my), hop(k, (t+5-st.from)/n, 12, 430, my)]);
+        else await Promise.all([tween(t, t+1, 240, my), hop(k, (t+1-st.from)/n, 5, 220, my)]);
+        t += d; c += d; count(`${c} min`, 'm');
+        d === 5 ? tick(c/5) : tone(700 + c*6, .06, 'triangle', .08);
+        await wait(d === 5 ? 300 : 220, my);
+      }
+      say(`From ${fmt(st.from)} to ${fmt(st.to)} is <b>${n} minutes</b>!`, 'good');
+    } else {
+      say(`The short hand is on the ${Math.floor(st.from/60)}. When the long hand goes all the way around, 1 hour goes by. Then I make a big hop!`);
+      await wait(1800, my);
+      let c = 0;
+      for(let t = st.from; t < st.to; t += 60){
+        sectorFrom = t;
+        await tween(t, t+60, 2000, my);
+        await hop(k, (t+60-st.from)/n, 28, 650, my);
+        c++; count(pl(c,'hour'), 'h'); tick(c*3);
+        say(`The short hand moved to the ${Math.floor((t+60)/60)}. That’s ${pl(c,'hour')}.`);
+        await wait(900, my);
+      }
+      say(`From ${fmt(st.from)} to ${fmt(st.to)} is <b>${pl(n/60,'hour')}</b>!`, 'good');
+    }
+  } else if(st.kind === 'add'){
+    renderTray(st);
+    say(level === 'vhard' ? `Each square is 5 minutes and each dot is 1 minute. Let’s count them all.` : `Each square is 5 minutes. Let’s count all the squares by 5s.`);
+    await wait(1400, my);
+    await countBlocks([...document.querySelectorAll('#tray .grid .blk')], c => `${c} min`, my);
+    say(`${P.a} + ${P.b} = <b>${P.M} minutes</b>!`, 'good');
+  } else if(st.kind === 'convert'){
+    renderTray(st);
+    say(`A full row has 12 squares. Let’s count the first row by 5s.`);
+    await wait(1400, my);
+    const all = [...document.querySelectorAll('#tray .grid .blk')];
+    await countBlocks(all.slice(0,12), c => `${c} min`, my, true);
+    say(`60 minutes! 60 minutes make <b>1 hour</b>.`);
+    await wait(700, my);
+    $('#hg').classList.add('merged'); count('1 hour', 'h'); yay();
+    await wait(1600, my);
+    if(P.M === 60){
+      say(`There’s nothing left over. 60 minutes = <b>exactly 1 hour</b>!`, 'good');
+    } else {
+      say(`Now count what is left over.`);
+      await countBlocks(all.slice(12), c => `1 hour + ${c} min`, my);
+      say(`${P.M} minutes = <b>1 hour and ${pl(P.M-60,'minute')}</b>!`, 'good');
+    }
+  } else {
+    renderTray(st);
+    say(`First count the blue hours.`);
+    await wait(1200, my);
+    let h = 0;
+    for(const p of document.querySelectorAll('#tray .pill')){ p.classList.add('lit'); h++; count(pl(h,'hour'), 'h'); tick(h*3); await wait(700, my); }
+    if(!h){ count('0 hours','h'); await wait(900, my); }
+    let m = 0;
+    if(P.tM){
+      say(`Now count the coral minutes.`);
+      await wait(900, my);
+      m = await countBlocks([...document.querySelectorAll('#tray .grid .blk')], c => `${pl(h,'hour')} ${c} min`, my);
+    } else {
+      say(`There are no minutes left over. That’s 0 minutes.`);
+      count(`${pl(h,'hour')} 0 min`, 'h'); await wait(1200, my);
+    }
+    say(`That’s <b>${pl(h,'hour')} and ${pl(m,'minute')}</b>!`, 'good');
+  }
+}
+async function runDemo(after){
+  const my = ++tok; setBusy(true);
+  try{
+    await demo(steps[si], my);
+    await wait(500, my);
+    say(($('#say').innerHTML) + `<br>Your turn! Type the answer.`, 'good');
+  }catch(e){ if(e !== CANCEL) console.error(e); return; }
+  setBusy(false);
+}
+
+/* ---------- answering ---------- */
+function press(k){
+  if(busy) return;
+  if(k === 'back'){ entry[field] = entry[field].slice(0,-1); }
+  else if(k === 'ok'){ return check(); }
+  else if(entry[field].length < 3){ entry[field] = (entry[field] + k).replace(/^0(\d)/,'$1'); }
+  renderAns();
+}
+async function check(){
+  const st = steps[si];
+  if(entry.some(e => e === '')){ say(entry.length > 1 ? 'Fill in both boxes, then press Check.' : 'Type a number, then press Check.'); return; }
+  const ok = st.ans.every((a,i) => +entry[i] === a);
+  if(ok){
+    yay(); st.done = true; renderAns('ok'); renderDots(); renderTimeline();
+    say(pick(['Ribbit! You got it!','Great job! Hop hop!','That’s right!','Super! Ribbit!','You’re a time expert!']), 'good');
+    const my = ++tok; setBusy(true);
+    try{
+      if(st.kind === 'clock'){
+        sectorFrom = st.from;
+        await Promise.all([tween(clockT, st.to, 900, my), hop(clockIdx(st), 1, 38, 700, my)]);
+        count(st.hours ? pl(st.ans[0],'hour') : `${st.ans[0]} min`, st.hours ? 'h' : 'm');
+      } else {
+        await hop(frogI, frogF, 24, 520, my);
+      }
+      if(st.kind === 'convert'){
+        document.querySelectorAll('#tray .blk').forEach(b => b.classList.add('lit'));
+        $('#hg').classList.add('merged');
+      }
+      await wait(1300, my);
+    }catch(e){ return; }
+    si++;
+    si < steps.length ? renderStep() : finish();
+  } else {
+    oops(); mistakes++;
+    renderAns('no');
+    say(`Oops! Not quite. Let’s hop it slowly together!`, 'bad'); frogMood('oops');
+    const my = ++tok; setBusy(true);
+    try{ await wait(1300, my); }catch(e){ return; }
+    entry = st.ans.map(() => ''); field = 0; renderAns();
+    runDemo();
+  }
+}
+function starSVG(on){ return `<svg viewBox="0 0 24 24" aria-hidden="true"><path class="${on?'gold':'mute'}" d="M12 2l3 6.6 7.2.8-5.4 4.9 1.5 7.1L12 17.8 5.7 21.4l1.5-7.1L1.8 9.4 9 8.6z"/></svg>`; }
+function finish(){
+  const got = mistakes === 0 ? 3 : mistakes <= 2 ? 2 : 1;
+  stars += got; $('#stars').textContent = stars;
+  renderTimeline();
+  $('#total').textContent = `Total: ${fmt(P.start)} to ${fmt(P.end)} is ${durTxt(P.tH, P.tM)}`;
+  $('#clockBox').hidden = false; $('#clockBox').style.display = 'flex'; $('#tray').hidden = true;
+  sectorFrom = null; drawClock(P.end); count(durTxt(P.tH, P.tM), 'g');
+  $('#qArea').hidden = true;
+  placeFrog(document.querySelectorAll('#tl .dot').length - 1, 0); frogMood('party');
+  const w = $('#winArea'); w.hidden = false;
+  w.innerHTML = `<div class="bigstars">${starSVG(got>=1)+starSVG(got>=2)+starSVG(got>=3)}</div>
+    <h2>${got === 3 ? 'Ribbit! Perfect!' : got === 2 ? 'Ribbit! Well done!' : 'Ribbit! You did it!'}</h2>
+    <p>${P.name} ${P.act[2]} for <span class="hrs">${P.tH ? pl(P.tH,'hour') : ''}</span> <span class="mins">${P.tM ? pl(P.tM,'minute') : ''}</span>.</p>
+    <button class="big" id="again">Next problem</button>`;
+  $('#again').onclick = newProblem; $('#again').focus();
+  tone(523,.15); setTimeout(()=>tone(659,.15),140); setTimeout(()=>tone(784,.3),280);
+}
+function newProblem(){
+  tok++; makeProblem();
+  $('#winArea').hidden = true; $('#qArea').hidden = false; $('#total').textContent = '';
+  renderStory(); renderStep();
+}
+
+/* ---------- wiring ---------- */
+function buildKeys(){
+  const ks = ['1','2','3','4','5','6','7','8','9','back','0','ok'];
+  $('#keys').innerHTML = ks.map(k => k === 'back'
+    ? `<button data-k="back" aria-label="Delete">⌫</button>`
+    : k === 'ok' ? `<button data-k="ok" class="go">Check</button>` : `<button data-k="${k}">${k}</button>`).join('');
+  $('#keys').querySelectorAll('button').forEach(b => b.onclick = () => press(b.dataset.k));
+}
+document.addEventListener('keydown', e => {
+  if($('#qArea').hidden) return;
+  if(/^[0-9]$/.test(e.key)) press(e.key);
+  else if(e.key === 'Backspace') { e.preventDefault(); press('back'); }
+  else if(e.key === 'Enter' && document.activeElement?.closest?.('.keys, .row2, .seg, header') == null) { e.preventDefault(); press('ok'); }
+  else if(e.key === 'Tab' && entry && entry.length > 1 && document.activeElement?.classList?.contains('box')) { e.preventDefault(); field = (field+1) % entry.length; renderAns(); $('#ans .box.on')?.focus(); }
+});
+function setLevel(l){
+  level = l;
+  $('#lvEasy').setAttribute('aria-pressed', l === 'easy'); $('#lvHard').setAttribute('aria-pressed', l === 'hard'); $('#lvVery').setAttribute('aria-pressed', l === 'vhard');
+  newProblem();
+}
+$('#lvEasy').onclick = () => setLevel('easy');
+$('#lvHard').onclick = () => setLevel('hard');
+$('#lvVery').onclick = () => setLevel('vhard');
+$('#snd').onclick = () => { sound = !sound; drawSnd(); };
+$('#showMe').onclick = () => { if(!busy){ entry = steps[si].ans.map(()=>''); renderAns(); runDemo(); } };
+$('#newP').onclick = newProblem;
+
+buildClock(); buildKeys(); drawSnd(); $('#frog').innerHTML = FROG; $('#ava').innerHTML = FROG;
+// First problem matches the classic example: 6:20 PM to 8:40 PM
+makeProblem({sh:6, sm:20, gap:2, em:40, ampm:'PM'});
+renderStory(); renderStep();
+})();
+</script>
+
+</body>
+</html>
